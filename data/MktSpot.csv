@@ -1,0 +1,70 @@
+spotId,Information,FixtureType,LCStart,LCEnd,LoadPort,DiscPort,VesselName,Charterer,Status,CargoType,CargoGrade,CargoQty,RateType,Rate,Comments,ReportDate,Source,Vesseltype
+13,Market,Spot,03-08-2018,NA,scand,MED,liwa v,levantine,Fixed,NA,GO,40,NA,WS,Poss,28-9-2018 16:52,EA Gibson,ws
+6,Market,Spot,13-08-2018,NA,BALTIC,thai,ACTIVE,Total,Fixed,NA,unleaded motor spirit,37,NA,WS,Null,28-9-2018 16:52,Clarksons,MR
+30,Market,Spot,07-08-2018,NA,scand,UKC,idi,Exxon,Fixed,NA,ULSD,30,NA,WS,Null,28-9-2018 16:52,Clarksons,NA
+40,Market,Spot,15-08-2018,NA,CEYHAN,japan,iberian sea,UML,Subs,NA,DPP,80,NA,Lumpsum,Null,28-9-2018 16:52,Essex,NA
+27,Market,Spot,18-08-2018,NA,UKC,UKC,green attitude,Litasco,Fixed,NA,FO,45,NA,Null,Fxd,28-9-2018 16:52,Braemar,NA
+37,Market,Spot,07-08-2018,NA,WHITEGATE,ukc-opts,marlin singapore,Irving,Fixed,NA,FO,30,NA,WS,Null,28-9-2018 16:52,EA Gibson,NA
+14,Market,Spot,07-08-2018,NA,WHITEGATE,ukc-opts,marlin singapore,Irving,Fixed,NA,FO,30,NA,WS,Null,28-9-2018 16:52,EA Gibson,ws
+7,Market,Spot,07-08-2018,NA,scand,UKC,idi,Exxon,Fixed,NA,ULSD,30,NA,WS,Null,28-9-2018 16:52,Clarksons,NA
+24,Market,Spot,06-08-2018,NA,RIGA,UKC,sea shell,BBNAFT,Subs,NA,Naptha,30,NA,WS,Subs,28-9-2018 16:52,Braemar,ws
+41,Market,Spot,13-08-2018,NA,SKIKDA,incheon,dong a thetis,Petrobras,Subs,NA,Naptha,37,NA,WS,Null,28-9-2018 16:52,Howe Robinson,NA
+38,Market,Spot,10-08-2018,NA,gulf castle,cpc,AMAZON,Vitol,Fixed,NA,VGO,55,NA,WS,Null,28-9-2018 16:52,EA Gibson,Ultramax
+11,Market,Spot,31-08-2018,NA,PEMBROKE,cpc,abu dhabi iii,Valero,Fixed,NA,UMS,37,NA,WS,Null,28-9-2018 16:52,EA Gibson,ws
+4,Market,Spot,18-08-2018,NA,UKC,UKC,green attitude,Litasco,Fixed,NA,FO,45,NA,Null,Fxd,28-9-2018 16:52,Braemar,null
+25,Market,Spot,07-08-2018,NA,scand,UKC,idi,Exxon,Subs,NA,ULSD,30,NA,WS,Subs,28-9-2018 16:52,Braemar,NA
+35,Market,Spot,03-08-2018,NA,scand,MED,Atlantica,levantine,Failed,NA,GO,40,NA,WS,Change of Tech Manager,28-9-2018 16:52,EA Gibson,Ultramax
+19,Market,Spot,11-08-2018,NA,SINES,cpc,breeze,BP,Subs,NA,UMS,37,NA,WS,Null,28-9-2018 16:52,Howe Robinson,ws
+46,Market,Spot,09-08-2018,NA,reunion port,korea,navig8 tbn,Unipec,Subs,NA,CPP,60,NA,WS,Null,28-9-2018 16:52,SSY,NA
+12,Market,Spot,03-08-2018,NA,scand,MED,Atlantica,levantine,Failed,NA,GO,40,NA,WS,Change of Tech Manager,28-9-2018 16:52,EA Gibson,Ultramax
+5,Market,Spot,07-08-2018,NA,ukcm,MED,nordic tellus,ST Shipping,Fixed,NA,Ultra Low Sulphur Diesel,35,NA,WS,Null,28-9-2018 16:52,Clarksons,ws
+22,Market,Spot,10-08-2018,NA,wci,batu pahat,cape balder,Shell,Fixed,NA,Jet,90,NA,Lumpsum,Null,28-9-2018 16:52,SSY,lumpsum
+36,Market,Spot,03-08-2018,NA,scand,MED,liwa v,levantine,Fixed,NA,GO,40,NA,WS,Poss,28-9-2018 16:52,EA Gibson,NA
+10,Market,Spot,12-08-2018,NA,south korea,MED,CHRYSALIS,Petroineos,Fixed,NA,Crude,80,NA,WS,Null,28-9-2018 16:52,Bravo Tankers,LR2
+20,Market,Spot,13-08-2018,NA,SARROCH,cpc,united ambassador,SARAS,Subs,NA,UMS,37,NA,WS,Null,28-9-2018 16:52,Howe Robinson,ws
+2,Market,Spot,07-08-2018,NA,scand,UKC,idi,Exxon,Subs,NA,ULSD,30,NA,WS,Subs,28-9-2018 16:52,Braemar,ws
+17,Market,Spot,15-08-2018,NA,CEYHAN,japan,iberian sea,UML,Subs,NA,DPP,80,NA,Lumpsum,Null,28-9-2018 16:52,Essex,lumpsum
+23,Market,Spot,09-08-2018,NA,reunion port,korea,navig8 tbn,Unipec,Subs,NA,CPP,60,NA,WS,Null,28-9-2018 16:52,SSY,ws
+33,Market,Spot,12-08-2018,NA,south korea,MED,CHRYSALIS,Petroineos,Fixed,NA,Crude,80,NA,WS,Null,28-9-2018 16:52,Bravo Tankers,LR2
+44,Market,Spot,13-08-2018,NA,SKIKDA,incheon,dong a thetis,Petrobras,Failed,NA,Naptha,37,NA,WS,Null,28-9-2018 16:52,Howe Robinson,NA
+21,Market,Spot,13-08-2018,NA,SKIKDA,incheon,dong a thetis,Petrobras,Failed,NA,Naptha,37,NA,WS,Null,28-9-2018 16:52,Howe Robinson,NA
+3,Market,Spot,15-08-2018,NA,BILBAO,cpc,csc risingsun,REPSOL,Subs,NA,FO,55,NA,WS,RPLC,28-9-2018 16:52,Braemar,ws
+31,Market,Spot,08-08-2018,NA,UKC,cpc,pacific a dorodchi,BP,Subs,NA,UMS,37,NA,WS,LC Base Oil,28-9-2018 16:52,Clarksons,NA
+18,Market,Spot,13-08-2018,NA,SKIKDA,incheon,dong a thetis,Petrobras,Subs,NA,Naptha,37,NA,WS,Null,28-9-2018 16:52,Howe Robinson,ws
+28,Market,Spot,07-08-2018,NA,ukcm,MED,nordic tellus,ST Shipping,Fixed,NA,Ultra Low Sulphur Diesel,35,NA,WS,Null,28-9-2018 16:52,Clarksons,NA
+34,Market,Spot,31-08-2018,NA,PEMBROKE,cpc,abu dhabi iii,Valero,Fixed,NA,UMS,37,NA,WS,Null,28-9-2018 16:52,EA Gibson,NA
+45,Market,Spot,10-08-2018,NA,wci,batu pahat,THETIS,Shell,Fixed,NA,Jet,90,NA,Lumpsum,Null,28-9-2018 16:52,SSY,Ultramax
+32,Market,Spot,10-08-2018,NA,KAVKAZ,brazil,aldana,ST Shipping,Fixed,NA,Crude,130,NA,WS,Null,28-9-2018 16:52,Bravo Tankers,NA
+42,Market,Spot,11-08-2018,NA,SINES,cpc,breeze,BP,Subs,NA,UMS,37,NA,WS,Null,28-9-2018 16:52,Howe Robinson,NA
+15,Market,Spot,10-08-2018,NA,gulf castle,cpc,AMAZON,Vitol,Fixed,NA,VGO,55,NA,WS,Null,28-9-2018 16:52,EA Gibson,Ultramax
+8,Market,Spot,08-08-2018,NA,UKC,cpc,pacific a dorodchi,BP,Subs,NA,UMS,37,NA,WS,LC Base Oil,28-9-2018 16:52,Clarksons,ws
+29,Market,Spot,13-08-2018,NA,BALTIC,thai,ACTIVE,Total,Fixed,NA,unleaded motor spirit,37,NA,WS,Null,28-9-2018 16:52,Clarksons,MR
+39,Market,Spot,15-08-2018,NA,china,taiwan,PAMISOS,Litasco,Subs,NA,DPP,80,NA,WS,Null,28-9-2018 16:52,Essex,LR2
+1,Market,Spot,06-08-2018,NA,RIGA,UKC,sea shell,BBNAFT,Subs,NA,Naptha,30,NA,WS,Subs,28-9-2018 16:52,Braemar,ws
+43,Market,Spot,13-08-2018,NA,SARROCH,cpc,united ambassador,SARAS,Subs,NA,UMS,37,NA,WS,Null,28-9-2018 16:52,Howe Robinson,NA
+16,Market,Spot,15-08-2018,NA,china,taiwan,PAMISOS,Litasco,Subs,NA,DPP,80,NA,WS,Null,28-9-2018 16:52,Essex,LR2
+9,Market,Spot,10-08-2018,NA,KAVKAZ,brazil,aldana,ST Shipping,Fixed,NA,Crude,130,NA,WS,Null,28-9-2018 16:52,Bravo Tankers,ws
+26,Market,Spot,15-08-2018,NA,BILBAO,cpc,csc risingsun,REPSOL,Subs,NA,FO,55,NA,WS,RPLC,28-9-2018 16:52,Braemar,NA
+13,Market,Spot,03-08-2018,03-08-2018,a r a,MED,navig8 tbn,levantine,Fixed,Clean/Cpp,GO,40,WS,RNR,Poss,03-08-2018,EA Gibson,null
+6,Market,Spot,11-08-2018,13-08-2018,BALTIC,usac,ACTIVE,Total,Fixed,Clean/Cpp,unleaded motor spirit,37,WS,102.5,Null,02-08-2018,Clarksons,MR
+14,Market,Spot,05-08-2018,07-08-2018,WHITEGATE,ecc,CONTI BENGUELA,Irving,Fixed,Dirty/Dpp,FO,30,WS,RNR,Null,03-08-2018,EA Gibson,Handy
+7,Market,Spot,05-08-2018,07-08-2018,a r a,UKC,BRITISH CIRRUS,Exxon,Fixed,Clean/Cpp,ULSD,30,WS,125.0,Null,03-08-2018,Clarksons,Handy
+11,Market,Spot,30-08-2018,31-08-2018,PEMBROKE,ta,PTI CYGNUS,Valero,Fixed,Clean/Cpp,UMS,37,WS,112.5,Null,03-08-2018,EA Gibson,MR
+4,Market,Spot,17-08-2018,18-08-2018,UKC,UKC,MINERVA XANTHE,Litasco,Fixed,Dirty/Dpp,FO,45,null,RNR,Fxd,03-08-2018,Braemar,MR
+19,Market,Spot,09-08-2018,11-08-2018,SINES,ta,ELANDRA PALM,BP,Subs,Clean/Cpp,UMS,37,WS,100.0,Null,03-08-2018,Howe Robinson,MR
+12,Market,Spot,03-08-2018,03-08-2018,a r a,MED,Atlantica,levantine,Failed,Clean/Cpp,GO,40,WS,105.0,Change of Tech Manager,03-08-2018,EA Gibson,Ultramax
+5,Market,Spot,07-08-2018,07-08-2018,malta,MED,KRITI EMERALD,ST Shipping,Fixed,Clean/Cpp,Ultra Low Sulphur Diesel,35,WS,102.5,Null,02-08-2018,Clarksons,MR
+22,Market,Spot,10-08-2018,10-08-2018,NA,UKC,dong a thetis,Shell,Fixed,Clean/Cpp,Jet,90,Lumpsum,1900000.0,Null,03-08-2018,SSY,null
+10,Market,Spot,12-08-2018,12-08-2018,s.kerir,MED,CHRYSALIS,Petroineos,Fixed,Dirty/Dpp,Crude,80,WS,115.0,Null,03-08-2018,Bravo Tankers,LR2
+20,Market,Spot,11-08-2018,13-08-2018,SARROCH,ta,ARDMORE SEAFOX,SARAS,Subs,Clean/Cpp,UMS,37,WS,100.0,Null,03-08-2018,Howe Robinson,MR
+2,Market,Spot,05-08-2018,07-08-2018,a r a,UKC,BRITISH CIRRUS,Exxon,Subs,Clean/Cpp,ULSD,30,WS,125.0,Subs,03-08-2018,Braemar,Handy
+17,Market,Spot,15-08-2018,15-08-2018,CEYHAN,thai,SARASOTA A,UML,Subs,Dirty/Dpp,DPP,80,Lumpsum,2200000.0,Null,06-08-2018,Essex,LR2
+23,Market,Spot,09-08-2018,09-08-2018,gulf castle,china,eafr,Unipec,Subs,Clean/Cpp,CPP,60,WS,RNR,Null,03-08-2018,SSY,null
+21,Market,Spot,12-08-2018,13-08-2018,SKIKDA,brazil,SEAWAYS SKOPELOS,Petrobras,Failed,Clean/Cpp,Naptha,37,WS,115.0,Null,03-08-2018,Howe Robinson,MR
+3,Market,Spot,12-08-2018,15-08-2018,BILBAO,ta,united ambassador,REPSOL,Subs,Dirty/Dpp,FO,55,WS,115.0,RPLC,03-08-2018,Braemar,null
+18,Market,Spot,12-08-2018,13-08-2018,SKIKDA,brazil,SEAWAYS SKOPELOS,Petrobras,Subs,Clean/Cpp,Naptha,37,WS,115.0,Null,03-08-2018,Howe Robinson,MR
+15,Market,Spot,08-08-2018,10-08-2018,scand,ta,AMAZON VIRTUE,Vitol,Fixed,Dirty/Dpp,VGO,55,WS,105.0,Null,03-08-2018,EA Gibson,LR1
+8,Market,Spot,08-08-2018,08-08-2018,UKC,ta,ALPINE MOMENT,BP,Subs,Clean/Cpp,UMS,37,WS,100.0,LC Base Oil,03-08-2018,Clarksons,MR
+1,Market,Spot,05-08-2018,06-08-2018,RIGA,UKC,HANS SCHOLL,BBNAFT,Subs,Clean/Cpp,Naptha,30,WS,125.0,Subs,03-08-2018,Braemar,MR
+16,Market,Spot,15-08-2018,15-08-2018,cpc,ukcm,PAMISOS,Litasco,Subs,Dirty/Dpp,DPP,80,WS,RNR,Null,06-08-2018,Essex,LR2
+9,Market,Spot,10-08-2018,10-08-2018,KAVKAZ,spore,cape balder,ST Shipping,Fixed,Dirty/Dpp,Crude,130,WS,67.5,Null,03-08-2018,Bravo Tankers,null

@@ -1,0 +1,13 @@
+name: debug
+title: Debug
+username: pythian_dkh
+account: pythian_dkh
+server: 10.80.40.13
+hostUrl: http://10.80.40.13:3939/__api__
+appId: 37
+bundleId: 116
+url: http://10.80.40.13:3939/MIDAS/
+when: 1550130715.85879
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: app.R|PositionListCode.R

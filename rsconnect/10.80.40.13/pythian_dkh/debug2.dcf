@@ -1,0 +1,13 @@
+name: debug2
+title: Debug2
+username: pythian_dkh
+account: pythian_dkh
+server: 10.80.40.13
+hostUrl: http://10.80.40.13:3939/__api__
+appId: 39
+bundleId: 132
+url: http://10.80.40.13:3939/content/39/
+when: 1550340712.20889
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: app.R|.~lock.mmsis.csv#|PositionListCode.R|.RData
