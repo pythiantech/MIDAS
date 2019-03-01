@@ -291,7 +291,7 @@ function(input, output, session) {
     ###################################
     ###################################
   VOI <- reactive(V_Dim_Voyage() %>% filter(VoyageEstimateExists == 'Voy With No Estimate' & CompleteGMT >= (Sys.Date() - 30) |
-                                   VoyageEstimateExists == 'Voy With Estimate' & CompleteGMT > (Sys.Date()) & CompleteGMT <= (Sys.Date() + 30),
+                                   VoyageEstimateExists == 'Voy With Estimate' & CompleteGMT > (Sys.Date()) & CompleteGMT <= (Sys.Date() + 60),
                                  oprType != 'RELT',
                                  oprType != 'OVTO',
                                  oprType != 'TCTO',

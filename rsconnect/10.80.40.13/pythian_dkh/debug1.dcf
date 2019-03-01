@@ -5,9 +5,9 @@ account: pythian_dkh
 server: 10.80.40.13
 hostUrl: http://10.80.40.13:3939/__api__
 appId: 38
-bundleId: 156
+bundleId: 165
 url: http://10.80.40.13:3939/MIDAS/
-when: 1550678813.99727
+when: 1551406491.55495
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: app.R|.~lock.mmsis.csv#|PositionListCode.R|.RData|WFRV.Rds
+ignoredFiles: app.R|.~lock.mmsis.csv#|PositionListCode.R|.RData

@@ -298,7 +298,60 @@ tabPanel(
 tabPanel(
   title = "Tonnage List",
   fluidRow(
-    column(9,
+    hidden(
+      column(
+        12, id = 'hiddenTL',
+        div(
+          class = "search__grid header-search-container",
+          actionButton('showFiltersTL', "Show Filters",class = "toolbar__btn", icon = icon("filter"))
+          
+        ),
+        div(
+          class = "section_box",
+          div(
+            class = "section_box_title",
+            "Master Tonnage List"
+          ),
+          div(
+            class = "section_box_body",
+            rHandsontableOutput("TonnageListData2"),
+            br(), br(),
+            actionBttn('addRowTL2',"Add New Row",style = "jelly",
+                       color = "success",
+                       icon = icon("plus")),
+            br(),
+            br(),
+            actionBttn('saveTLData2',"Save",style = "jelly",
+                       color = "success",
+                       icon = icon("thumbs-up")),
+            useShinyalert()
+          )
+        ),
+        div(
+          class = "section_box",
+          div(
+            class = "section_box_title",
+            "Market Tonnage Table"
+          ),
+          div(
+            class = "section_box_body",
+            
+            DTOutput('BizTon2'),
+            br(),
+            h4("Please select rows by clicking on them and then press the shift button to copy
+                  the rows to the table above"),
+            actionButton("shiftcellsTL2", "Shift selected rows", class = "btn-primary")
+          )
+        )
+      )
+    ),
+    
+    column(9, id = 'visibleTL',
+           div(
+             class = "search__grid header-search-container",
+             actionButton('hideFiltersTL', "Hide Filters",class = "toolbar__btn", icon = icon("filter"))
+           ),
+           
            div(
              class = "section_box",
              div(
@@ -307,8 +360,17 @@ tabPanel(
              ),
              div(
                class = "section_box_body",
-               rHandsontableOutput("TonnageListData")
-               
+               rHandsontableOutput("TonnageListData"),
+               br(), br(),
+               actionBttn('addRowTL',"Add New Row",style = "jelly",
+                          color = "success",
+                          icon = icon("plus")),
+               br(),
+               br(),
+               actionBttn('saveTLData',"Save",style = "jelly",
+                          color = "success",
+                          icon = icon("thumbs-up")),
+               useShinyalert()
              )
            ),
            div(
@@ -329,7 +391,7 @@ tabPanel(
            )
            
     ),
-    column(3,
+    column(3, id = 'filtersTL',
            div(
              class = "section_box",
              div(
@@ -353,17 +415,7 @@ tabPanel(
                sliderInput('CubicTL',"Filter by Cubic",value = c(min(wvd$Cubics, na.rm = T),max(wvd$Cubics, na.rm = T)),
                            min = min(wvd$Cubics, na.rm = T),max = max(wvd$Cubics, na.rm = T)),
                dateRangeInput('OpenPortDate',"Filter by Open Port Date", start = (Sys.Date() - 30), end = Sys.Date() + 30),
-               br(),
-               br(),
-               actionBttn('addRowTL',"Add New Row",style = "jelly",
-                          color = "success",
-                          icon = icon("plus")),
-               br(),
-               br(),
-               actionBttn('saveTLData',"Save",style = "jelly",
-                          color = "success",
-                          icon = icon("thumbs-up")),
-               useShinyalert(), br(), br(),
+               br(), br(),
                actionBttn('ResetFilt',"Reset Filters",style = "jelly",
                           color = "success",
                           icon = icon("filter"))
@@ -392,10 +444,21 @@ tabPanel(
                ),
                div(
                  class = "section_box_body",
+                 
                  rHandsontableOutput("CargoListData2"),
                  br(),
+                 actionBttn('addRow2',"Add New Row",style = "jelly",
+                            color = "success",
+                            icon = icon("plus")),
+                 br(),
+                 br(),
+                 actionBttn('saveCLData2',"Save",style = "jelly",
+                            color = "success",
+                            icon = icon("thumbs-up")),
+                 useShinyalert(),
+                 br(),
                  h4("Please make sure to save the table prior to shifting selected rows to Scorpio Fixture Table"),
-                 actionButton("shiftcells", "Shift selected rows", class = "btn-primary")
+                 actionButton("shiftcells2", "Shift selected rows", class = "btn-primary")
                )
              ),
              div(
@@ -427,7 +490,18 @@ tabPanel(
              ),
              div(
                class = "section_box_body",
+               
                rHandsontableOutput("CargoListData"),
+               br(),
+               actionBttn('addRow',"Add New Row",style = "jelly",
+                          color = "success",
+                          icon = icon("plus")),
+               br(),
+               br(),
+               actionBttn('saveCLData',"Save",style = "jelly",
+                          color = "success",
+                          icon = icon("thumbs-up")),
+               useShinyalert(),
                br(),
                h4("Please make sure to save the table prior to shifting selected rows to Scorpio Fixture Table"),
                actionButton("shiftcells", "Shift selected rows", class = "btn-primary")
@@ -448,36 +522,27 @@ tabPanel(
            
     ),
     column(3, id = "filtersCL",
-           div(
-             class = "section_box",
+           # div(
+           #   class = "section_box",
+           #   div(
+           #     class = "section_box_title",
+           #     "Cargo List"
+           #   ),
+           #   div(
+           #     class = "section_box_body",
+           #     "Please use this form to add details on available cargos.
+           #     You can also use filters below to customize your view.", br(),br(),
+           #     materialSwitch(inputId = "viewFilterCL",label = "View Filters",value = TRUE,status = "success"),
+           #     
+           #     br(),
+           #     br()
+           #     
+           #   )
+           # 
+           # ),
+           # conditionalPanel(condition = "input.viewFilterCL",
              div(
-               class = "section_box_title",
-               "Cargo List"
-             ),
-             div(
-               class = "section_box_body",
-               "Please use this form to add details on available cargos.
-               You can also use filters below to customize your view.", br(),br(),
-               materialSwitch(inputId = "viewFilterCL",label = "View Filters",value = TRUE,status = "success"),
-               
-               br(),
-               br(),
-               
-               actionBttn('addRow',"Add New Row",style = "jelly",
-                          color = "success",
-                          icon = icon("plus")),
-               br(),
-               br(),
-               actionBttn('saveCLData',"Save",style = "jelly",
-                          color = "success",
-                          icon = icon("thumbs-up")),
-               useShinyalert()
-             )
-
-           ),
-           conditionalPanel(condition = "input.viewFilterCL",
-             div(
-               class = "seection_box",
+               class = "section_box",
                div(
                  class = "section_box_title",
                  "Filters"
@@ -485,26 +550,26 @@ tabPanel(
                div(
                  class = "section_box_body",
                  pickerInput('InformationCL',"Filter by Information", choices = c("Market", "Private"),
-                             options = list(`actions-box` = TRUE),multiple = T, selected = c("Market", "Private")),
+                             options = list(`actions-box` = TRUE),multiple = T, selected = c("Market", "Private",""," ", NA)),
                  pickerInput('RegionCL', 'Filter by Region', choices = c('NW EUROPE', 'MED', 'BSEA', 'WAF', 'USG/CARIBS', 'USAC', 
                                                                          'USWC', 'LATIN EAST', 'LATIN WEST', 'MIDDLE EAST', 'RED SEA/AFRICA', 'IOR', 
                                                                          'SOUTH EA', 'FAR EAST', 'OZ/NZ/PACIFIC'),
                              options = list(`actions-box` = TRUE), multiple = TRUE, selected = c('NW EUROPE', 'MED', 'BSEA', 'WAF', 'USG/CARIBS', 'USAC', 
                                                                                                  'USWC', 'LATIN EAST', 'LATIN WEST', 'MIDDLE EAST', 'RED SEA/AFRICA', 'IOR', 
-                                                                                                 'SOUTH EA', 'FAR EAST', 'OZ/NZ/PACIFIC')),
+                                                                                                 'SOUTH EA', 'FAR EAST', 'OZ/NZ/PACIFIC',""," ", NA)),
                  pickerInput('CargoTypeCL', "Filter by Cargo Type", choices = c("Clean","Dirty","Chemicals"),
-                             options = list(`actions-box` = TRUE),multiple = T, selected = c("Clean","Dirty","Chemicals")),
+                             options = list(`actions-box` = TRUE),multiple = T, selected = c("Clean","Dirty","Chemicals",""," ", NA)),
                  pickerInput('StatusCL', "Filter by Status", choices = c("Fixed","Unfixed","Hold",
                                                                          "Subs","Others","Died", "Looking","Open","WDWF"),
                              options = list(`actions-box` = TRUE),multiple = T, selected = c("Fixed","Unfixed","Hold",
-                                                                                             "Subs","Others","Died", "Looking","Open","WDWF")),
+                                                                                             "Subs","Others","Died", "Looking","Open","WDWF",""," ", NA)),
                  dateRangeInput('RepDateCL',"Filter by Reported Date", start = (Sys.Date() - 30), end = Sys.Date() + 30),
                  textInput("ChartCL","Type in the Charterer name to filter the table",NULL),
                  textInput("BrokerCL","Type in the Broker name to filter the table",NULL),
                  textInput("OperatorCL","Type in the Operator name to filter the table",NULL)
                )
              )
-           )
+           # )
            )
     )
 ),

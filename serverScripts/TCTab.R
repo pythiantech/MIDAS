@@ -238,8 +238,10 @@ Monthly <- Monthly[complete.cases(Monthly$DAILY_NET_TCE),]
 UID <- character()
 PERIOD <- character()
 DAILY_NET_TCE <- numeric()
+
 for (i in 1:nrow(NDV)) {
   Monthlyx <- Monthly %>% filter(POOL_ID == NDV$POOL_ID[i])
+  if (nrow(Monthlyx) > 0) {
   for (j in 1:nrow(Monthlyx)) {
     DNTx <- NDV$Factor[i]*Monthly$DAILY_NET_TCE[j]
     UIDx <- NDV$UID[i]
@@ -247,12 +249,11 @@ for (i in 1:nrow(NDV)) {
     UID <- c(UID, UIDx)
     PERIOD <- c(PERIOD,Periodx)
     DAILY_NET_TCE <- c(DAILY_NET_TCE, DNTx)
-  }
+  }}
 }
 
 MonthlyDF <- data.frame(UID,PERIOD,DAILY_NET_TCE)
 rm(Monthly,Monthlyx)
-
 PNLFinal <- bind_rows(PNLTable %>% select(UID, PERIOD, DAILY_NET_TCE), MonthlyDF) %>% arrange(UID)
 
 PNLFinal <- left_join(PNLFinal, PNLTable)
@@ -301,6 +302,7 @@ PBM$UUID <- paste(PBM$VslCode, PBM$QUARTER_MONTH)
 PNLFinal$DAILY_NET_TCE2 <- PBM$QTR_MONTH_NET_TCE[match(PNLFinal$UUID, PBM$UUID)]
 PNLFinal$IMO <- V_Dim_Vessel()$imo_no[match(PNLFinal$VesselCode, V_Dim_Vessel()$VesselCode)]
 PNLFinal$VESSEL_NAME <- toupper(PNLFinal$VESSEL_NAME)
+saveRDS(PNLFinal, "PNLFinal.Rds")
 PNLFinal
 })
 ######################################################################################
@@ -323,9 +325,9 @@ output$PNLSummary <- renderDT({
 
   for (i in 1:nrow(SelVel)) {
     SelVel$NetDays[i] <- ifelse(grepl('^[0-9]',SelVel$PERIOD[i]), SelVel$NetDays[i], SelVel$DAYS_NET[i])}
-
+  
   SelVel <- SelVel %>% select(VESSEL_NAME, PERIOD, DAYS_NET, NetDays,DAILY_NET_TCE,DAILY_NET_TCE2,YearDate,IMO,VesselCode)
-
+  
   SelVel$DAILY_NET_TCE2 <- ifelse(grepl('^[0-9]', SelVel$PERIOD),SelVel$DAILY_NET_TCE2, SelVel$DAILY_NET_TCE)
   SelVel <- SelVel[complete.cases(SelVel$DAILY_NET_TCE2),]
   SelVel$PERIOD <- ifelse(grepl('-Mar', SelVel$PERIOD),gsub("-Mar", "/Q1", SelVel$PERIOD),
@@ -352,6 +354,7 @@ output$PNLSummary <- renderDT({
 
   SelVel <- SelVel %>% ungroup() %>% select(VESSEL_NAME,PERIOD, NetDays, TCE = DAILY_NET_TCE2, YearDate)
   SelVel$YearDate <- ymd(SelVel$YearDate)
+  
   for (i in 1:nrow(SelVel)) {
     x = match(SelVel$PERIOD[i], TCVsl$PERIOD)
     if (!is.na(x)) {

@@ -25,6 +25,8 @@ output$wlControl <- renderUI({
 
 
 observeEvent(input$wlView,{
+  CustomList <- read_csv('data/wl/CustomList.csv')
+  vals <- reactiveValues(df = CustomList)
   updatePickerInput(session,'vsltypeFLIC',selected = c("Handy", "LR1",
                                                        "LR2", "MR"))
 

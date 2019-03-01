@@ -831,6 +831,7 @@ output$SCLP <- renderLeaflet({
       WFLD$lat <- as.numeric(WFLD$lat)
       WFLD$lon <- as.numeric(WFLD$lon)
       maxt <- maxt %>% filter(lon <= 180 )
+      
       # saveRDS(maxt,'maxt.Rds')
       if(nrow(maxt) > 4000){
         value <- nrow(maxt) %/% 3998
