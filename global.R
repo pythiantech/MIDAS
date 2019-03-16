@@ -11,7 +11,7 @@ MDIS_ASYNC <- FALSE
 
 ############################################
 
-MDIS_CACHE <- TRUE
+MDIS_CACHE <- FALSE
 
 #########################################################################
 ######################### END OPTIONS FOR RUNNING THE APP
@@ -281,60 +281,60 @@ get_sea_routes <- function(lat1, lon1, lat2, lon2){
 
 
 # Get vessels present location data from Stratum
-get_vessels_data <- function() {
-  if (MDIS_CACHE) {
-    file <- paste0(cache_dir, "vessels.Rds")
-    if (file.exists(file) && file.info(file)$mtime > previous2hrs()) {
-      return(readRDS(file))
-    } else {
-      save_result_to <- file
-    }
-  } else {
-    save_result_to <- NULL
-  }
+# get_vessels_data <- function() {
+#   if (MDIS_CACHE) {
+  #   file <- paste0(cache_dir, "vessels.Rds")
+  #   if (file.exists(file) && file.info(file)$mtime > previous2hrs()) {
+  #     return(readRDS(file))
+  #   } else {
+  #     save_result_to <- file
+  #   }
+  # } else {
+  #   save_result_to <- NULL
+  # }
+  # 
+  # baseurl_own <- config$baseurl_own
+  # username_own <- config$username_own
+  # password_own <- config$password_own
+  # auth_own <- paste("Basic",base64(paste(username_own, password_own, sep = ":")))
+  # 
+  # # Get vessels' IMOs
+  # imos_get <- GET(paste0(baseurl_own,"vessels"),add_headers(Authorization = auth_own))
+  # text_content <- content(imos_get, "text")
+  # json_content <- text_content %>% fromJSON()
+  # imos <- json_content$obj
+  # rm(imos_get,text_content,json_content)
 
-  baseurl_own <- config$baseurl_own
-  username_own <- config$username_own
-  password_own <- config$password_own
-  auth_own <- paste("Basic",base64(paste(username_own, password_own, sep = ":")))
-
-  # Get vessels' IMOs
-  imos_get <- GET(paste0(baseurl_own,"vessels"),add_headers(Authorization = auth_own))
-  text_content <- content(imos_get, "text")
-  json_content <- text_content %>% fromJSON()
-  imos <- json_content$obj
-  rm(imos_get,text_content,json_content)
-
-  # Loop through IMOs
-  counter <- 1
-  vessels <- data.frame(matrix(ncol  =  12, nrow  =  0))
-  vars <- c("imo", "boatName", "vesselType", "callSign", "mmsi", "gpsTimeStamp",
-            "lat", "lon", "cog", "sog", "pollCategory", "pollMessage")
-  colnames(vessels) <- vars
-
-  while (counter < (length(imos) %/% 30)*30) {
-    testimo <- paste(as.character(imos[counter:(counter + 29)]), collapse = ',')
-    vesdetails <- GET(paste0(baseurl_own,"vessels","/",testimo),add_headers(Authorization = auth_own))
-    vessels <- bind_rows(vessels,as.data.frame(fromJSON(content(vesdetails, "text"))$obj))
-    counter <- counter + 30
-
-  }
-  testimo <- paste(as.character(imos[counter:length(imos)]), collapse = ',')
-  vesdetails <- GET(paste0(baseurl_own,"vessels","/",testimo),add_headers(Authorization = auth_own))
-  vessels <- rbind(vessels,as.data.frame(fromJSON(content(vesdetails, "text"))$obj))
-  rm(counter,vars,testimo,vesdetails)
-  vessels$lon <- as.numeric(vessels$lon)
-  vessels$lat <- as.numeric(vessels$lat)
-  vessels$vesselType <- as.factor(vessels$vesselType)
-
-  if (!is.null(save_result_to)) {
-    saveRDS(vessels, file)
-  }
-
-  return(vessels)
-}
-
-vessels <- get_vessels_data()
+  # # Loop through IMOs
+  # counter <- 1
+  # vessels <- data.frame(matrix(ncol  =  12, nrow  =  0))
+  # vars <- c("imo", "boatName", "vesselType", "callSign", "mmsi", "gpsTimeStamp",
+  #           "lat", "lon", "cog", "sog", "pollCategory", "pollMessage")
+  # colnames(vessels) <- vars
+  # 
+  # while (counter < (length(imos) %/% 30)*30) {
+  #   testimo <- paste(as.character(imos[counter:(counter + 29)]), collapse = ',')
+  #   vesdetails <- GET(paste0(baseurl_own,"vessels","/",testimo),add_headers(Authorization = auth_own))
+  #   vessels <- bind_rows(vessels,as.data.frame(fromJSON(content(vesdetails, "text"))$obj))
+  #   counter <- counter + 30
+  # 
+  # }
+#   testimo <- paste(as.character(imos[counter:length(imos)]), collapse = ',')
+#   vesdetails <- GET(paste0(baseurl_own,"vessels","/",testimo),add_headers(Authorization = auth_own))
+#   vessels <- rbind(vessels,as.data.frame(fromJSON(content(vesdetails, "text"))$obj))
+#   rm(counter,vars,testimo,vesdetails)
+#   vessels$lon <- as.numeric(vessels$lon)
+#   vessels$lat <- as.numeric(vessels$lat)
+#   vessels$vesselType <- as.factor(vessels$vesselType)
+# 
+#   if (!is.null(save_result_to)) {
+#     saveRDS(vessels, file)
+#   }
+# 
+#   return(vessels)
+# }
+# 
+# vessels <- get_vessels_data()
 
 
 ########################################################
@@ -351,30 +351,12 @@ shipIcons <- iconList(Torm = makeIcon("www/img/1.png", iconWidth  =  11, iconHei
                       Maersk = makeIcon("www/img/7.png", iconWidth  =  11, iconHeight  =  24, iconAnchorX  =  5, iconAnchorY  =  0),
                       Hafnia = makeIcon("www/img/9.png", iconWidth  =  11, iconHeight  =  24, iconAnchorX  =  5, iconAnchorY  =  0))
 
-#########################################################
-
-wvd <- readRDS("data/wvd.Rds")
 
 
-wvd$VesselDetails <- paste0("<div style = 'font-size:12px;float:left'>
-            <span style = 'font-size:16px;font-weight:bold'>",wvd$Name,"</span><br/>",
-                            "<br/><span style = 'font-size:10px'>Year Built:",wvd$Built,"</span><br/>",
-                            "<span style = 'font-size:10px'>DWT:",wvd$Dwt,"</span><br/>",
-                            "<span style = 'font-size:10px'>Cubic:",wvd$Cubics,"</span><br/>",
-                            "<span style = 'font-size:10px'>Ice Class:",wvd$`Ice Class`,"</span><br/>",
-                            "<span style = 'font-size:10px'>IMO:",wvd$`IMO No.`,"</span><br/>",
-                            "<span style = 'font-size:10px'>Ship Type:",wvd$`Vessel Type`,"</span><br/>",
-                            "<span style = 'font-size:10px'>Owner:",wvd$`Owner Group`,"</span>
-        </div>")
 
-wvd$Age <- year(Sys.Date())-wvd$Built
-wvd$AgeClass <- ifelse(wvd$Age<=5, "0-5 Years Old",
-                       ifelse(wvd$Age<=10 & wvd$Age>5, "6-10 Years Old",
-                              ifelse(wvd$Age<=15 & wvd$Age>10, "11-15 Years Old",
-                                     ifelse(wvd$Age<=20 & wvd$Age>15, "16-20 Years Old", "Above 20 Years Old")) ))
 
-wvd <- wvd %>% filter(`Vessel Type` %!in% c('Kamsarmax', 'Ultramax'))
-wvd <- wvd[!duplicated(wvd$MMSI),]
+
+
 
 
 # AllRegions <- readRDS("data/editedRegions.Rds")

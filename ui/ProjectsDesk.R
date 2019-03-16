@@ -166,18 +166,14 @@ tabPanel(
                 div(class = "section_box_divider"),br(),
                 column(
                   6,
-                  fluidRow(column(6,selectInput('OwnerGroup','Select Owner Group',
-                                                choices = levels(as.factor(combineds$OwnerGroup)),
-                                                selected = "Scorpio Group"))),
+                  fluidRow(column(6,uiOutput('OwnerGroup'))),
                   highchartOutput('OBAF', width = '100%', height = '600px')
                 ),
                 column(
                   6,
                   fluidRow(
 
-                    column(6, selectInput('vslclass', 'Select vessel type',
-                                          choices = levels(as.factor(consolidated$`Vessel Type`)),
-                                          selected = "Handy"))
+                    column(6, uiOutput('vslclass'))
                   ),
                   highchartOutput('ByAge', width = '100%', height = '600px')
                 )

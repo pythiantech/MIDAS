@@ -340,6 +340,25 @@
  ##########################################################################
  #World Fleet
 
+
+###########################
+#Filters dependent on wvd()
+
+output$Operator <- renderUI({
+  pickerInput('Operator',"Select Commercial Operator", choices = levels(as.factor(wvd()$`Commercial Operator`)),
+              options = list(`actions-box` = TRUE,`live-search`=TRUE))
+})
+
+output$VesselT <- renderUI({
+  pickerInput('VesselT',"Select Vessel Type", choices = levels(as.factor(wvd()$`Vessel Type`)),multiple = TRUE,
+              selected = levels(as.factor(wvd()$`Vessel Type`)), 
+              options = list(`actions-box` = TRUE,`live-search`=TRUE))
+})
+output$CargoTypeWF <- renderUI({
+  pickerInput('CargoTypeWF', 'Filter by Cargo Type', choices = levels(as.factor(wvd()$Type)),multiple = TRUE,
+              selected = levels(as.factor(wvd()$Type)), 
+              options = list(`actions-box` = TRUE, `live-search` = TRUE))
+})
  WFrv <- reactiveValues()
 
  observeEvent(input$DBexecute,{
@@ -351,8 +370,8 @@
    Operators <- input$Operator
    VTypes <- input$VesselT
    CargoTypeWF <- input$CargoTypeWF
-   MMSIs <- wvd$MMSI[wvd$`Commercial Operator` %in% Operators & wvd$`Vessel Type` %in% VTypes & wvd$Type %in% CargoTypeWF]
-   ScorpioMMSI <- wvd %>% filter(`Commercial Operator` == 'SCORPIO') %>% 
+   MMSIs <- wvd()$MMSI[wvd()$`Commercial Operator` %in% Operators & wvd()$`Vessel Type` %in% VTypes & wvd()$Type %in% CargoTypeWF]
+   ScorpioMMSI <- wvd() %>% filter(`Commercial Operator` == 'SCORPIO') %>% 
      filter(`Vessel Type` %in% VTypes) %>% filter(Type %in% CargoTypeWF) %>% pull(MMSI)
    StartDate <- ymd(input$WorldDateRange[1])
    EndDate <- ymd(input$WorldDateRange[2])
@@ -576,9 +595,9 @@ output$SCLP <- renderLeaflet({
    req(input$FleetType)
    req(input$WVDVslType)
    if(input$FleetType == 'World')
-   choices <- wvd %>% filter(`Commercial Operator` != 'SCORPIO') %>% filter(`Vessel Type` %in% input$WVDVslType) %>% 
+   choices <- wvd() %>% filter(`Commercial Operator` != 'SCORPIO') %>% filter(`Vessel Type` %in% input$WVDVslType) %>% 
      pull(Name)
-   else choices <- wvd %>% filter(`Commercial Operator` == 'SCORPIO') %>% filter(`Vessel Type` %in% input$WVDVslType) %>% 
+   else choices <- wvd() %>% filter(`Commercial Operator` == 'SCORPIO') %>% filter(`Vessel Type` %in% input$WVDVslType) %>% 
      pull(Name)
    pickerInput('VesselSelect', 'Select Vessel', choices = choices,
                options = list(`actions-box` = TRUE,`live-search` = TRUE))
@@ -595,8 +614,8 @@ output$SCLP <- renderLeaflet({
    req(input$FleetType)
    req(input$VesselSelect)
    req(input$ScorpioDateRange)
-   SVD <- req(stratum_vdimvessel())
-   SMMSI <- as.character(wvd$MMSI[wvd$Name == input$VesselSelect])
+   # SVD <- req(stratum_vdimvessel())
+   SMMSI <- as.character(wvd()$MMSI[wvd()$Name == input$VesselSelect])
    
    StartDate <- as.numeric(gsub('-','',as.character(input$ScorpioDateRange[1])))
    EndDate <- as.numeric(gsub('-','',as.character(input$ScorpioDateRange[2])))
@@ -631,7 +650,7 @@ output$SCLP <- renderLeaflet({
   #Get Information on Voyages undertaken by the selected Scorpio vessel
   #Get IMO number
   if (input$FleetType == 'Scorpio'){
-    IMON <- wvd$`IMO No.`[wvd$Name == input$VesselSelect]
+    IMON <- wvd()$`IMO No.`[wvd()$Name == input$VesselSelect]
     
     #Now get VIDs associated with this IMO number
     

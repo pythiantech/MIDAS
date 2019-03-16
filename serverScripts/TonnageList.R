@@ -11,6 +11,25 @@
       shinyjs::show(id = "hiddenTL")
       shinyjs::hide(id = "filtersTL")
     })
+    
+    ################################################
+    #Filters dependent on wvd()
+    output$vtypeTL <- renderUI({
+      pickerInput('vtypeTL',"Filter by Vessel Type", choices = levels(as.factor(wvd()$`Vessel Type`)),
+                  options = list(`actions-box` = TRUE),multiple = T, selected = levels(as.factor(wvd()$`Vessel Type`)))
+    })
+    output$DWTTL <- renderUI({
+      sliderInput('DWTTL',"Filter by DWT",value = c(min(wvd()$Dwt, na.rm = T),max(wvd()$Dwt, na.rm = T)),
+                  min = min(wvd()$Dwt, na.rm = T),max = max(wvd()$Dwt, na.rm = T))
+    })
+    output$OprTL <- renderUI({
+      pickerInput('OprTL',"Filter by Operator", choices = levels(as.factor(wvd()$`Commercial Operator`)),
+                  options = list(`actions-box` = TRUE,`live-search` = TRUE),multiple = T, selected = levels(as.factor(wvd()$`Commercial Operator`)))
+    })
+    output$CubicTL <- renderUI({
+      sliderInput('CubicTL',"Filter by Cubic",value = c(min(wvd()$Cubics, na.rm = T),max(wvd()$Cubics, na.rm = T)),
+                  min = min(wvd()$Cubics, na.rm = T),max = max(wvd()$Cubics, na.rm = T))
+    })
 
 valuesTL <- reactiveValues()
 TLData <- reactive({
@@ -19,13 +38,13 @@ TLData <- reactive({
   TL <- TL %>% filter(OpenDate >= Sys.Date() - config$validTime)
   saveRDS(TL, 'data/TonnageList.Rds')
   TL <- readRDS('data/TonnageList.Rds')
-  TL$VslType <- wvd$`Vessel Type`[match(TL$VesselName, wvd$Name)]
-  TL$Cubic <- wvd$Cubics[match(TL$VesselName, wvd$Name)]
-  TL$DWT <- wvd$Dwt[match(TL$VesselName, wvd$Name)]
-  TL$IceClass <- wvd$`Ice Class`[match(TL$VesselName, wvd$Name)]
-  # TL$IMO <- wvd$`IMO No.`[match(TL$VesselName, wvd$Name)]
-  TL$Built <- wvd$Built[match(TL$VesselName, wvd$Name)]
-  TL$Operators <- wvd$`Commercial Operator`[match(TL$VesselName, wvd$Name)]
+  TL$VslType <- wvd()$`Vessel Type`[match(TL$VesselName, wvd()$Name)]
+  TL$Cubic <- wvd()$Cubics[match(TL$VesselName, wvd()$Name)]
+  TL$DWT <- wvd()$Dwt[match(TL$VesselName, wvd()$Name)]
+  TL$IceClass <- wvd()$`Ice Class`[match(TL$VesselName, wvd()$Name)]
+  # TL$IMO <- wvd()$`IMO No.`[match(TL$VesselName, wvd()$Name)]
+  TL$Built <- wvd()$Built[match(TL$VesselName, wvd()$Name)]
+  TL$Operators <- wvd()$`Commercial Operator`[match(TL$VesselName, wvd()$Name)]
   
   saveRDS(TL, 'data/TonnageList.Rds')
   TL <- readRDS('data/TonnageList.Rds')
@@ -52,7 +71,7 @@ output$TonnageListData2 <-output$TonnageListData <- renderRHandsontable({
     rhandsontable(TonnageList,width = '100%', height = 400,rowHeaders = NULL,
                          selectCallback = TRUE, readOnly = FALSE,stretchH = "all") %>%
       hot_context_menu(allowRowEdit = FALSE) %>%
-      hot_col(col = "VesselName", type = "dropdown", source = unique(wvd$Name)) %>%
+      hot_col(col = "VesselName", type = "dropdown", source = unique(wvd()$Name)) %>%
       hot_col(col = "EmpStatus", type = "dropdown", source = c("Fixed","Unfixed","Hold",
                                                                "Subs","Others","Died", "Looking","Open","WDWF","")) %>%
       hot_col(col = "OpenPort", type = "dropdown",source = unique(V_Dim_Ports()$PortName)) %>%
@@ -77,7 +96,7 @@ output$TonnageListData2 <-output$TonnageListData <- renderRHandsontable({
 
 edI <- reactiveValues(editedInfoTL = NA)
 observeEvent(input$TonnageListData$changes$changes, {
-  
+  df <- hot_to_r(input$TonnageListData)
   info <- input$TonnageListData$changes$changes
   rowid <- info[[1]][[1]] <- info[[1]][[1]] + 1
   colid <- info[[1]][[2]] <- info[[1]][[2]] + 1
@@ -86,7 +105,8 @@ observeEvent(input$TonnageListData$changes$changes, {
   oldtimestamp <- valuesTL[["TonnageList"]][rowid,14]
   newtimestamp <- epochTime()
   username <- user()
-  ROWIDT <- as.integer(valuesTL[["TonnageList"]][rowid,15])
+  # ROWIDT <- as.integer(valuesTL[["TonnageList"]][rowid,15])
+  ROWIDT <- as.integer(df[rowid,15])
   info <- sapply(info, function(x) ifelse(x == "NULL", NA, x))
   rowsold <- nrow(readRDS('data/TonnageList.Rds'))
   if (all(is.na(edI$editedInfoTL))) {
@@ -132,7 +152,7 @@ observeEvent(input$TonnageListData$changes$changes, {
 })
 ######################################################
 observeEvent(input$TonnageListData2$changes$changes, {
-  
+  df <- hot_to_r(input$TonnageListData2)
   info <- input$TonnageListData2$changes$changes
   rowid <- info[[1]][[1]] <- info[[1]][[1]] + 1
   colid <- info[[1]][[2]] <- info[[1]][[2]] + 1
@@ -141,7 +161,8 @@ observeEvent(input$TonnageListData2$changes$changes, {
   oldtimestamp <- valuesTL[["TonnageList"]][rowid,14]
   newtimestamp <- epochTime()
   username <- user()
-  ROWIDT <- as.integer(valuesTL[["TonnageList"]][rowid,15])
+  # ROWIDT <- as.integer(valuesTL[["TonnageList"]][rowid,15])
+  ROWIDT <- as.integer(df[rowid,15])
   info <- sapply(info, function(x) ifelse(x == "NULL", NA, x))
   rowsold <- nrow(readRDS('data/TonnageList.Rds'))
   if (all(is.na(edI$editedInfoTL))) {
@@ -208,13 +229,13 @@ observeEvent(input$saveTLData, {
     ungroup()
   
   TL <- readRDS('data/TonnageList.Rds')
-  TL$VslType <- wvd$`Vessel Type`[match(TL$VesselName, wvd$Name)]
-  TL$Cubic <- wvd$Cubics[match(TL$VesselName, wvd$Name)]
-  TL$DWT <- wvd$Dwt[match(TL$VesselName, wvd$Name)]
-  TL$IceClass <- wvd$`Ice Class`[match(TL$VesselName, wvd$Name)]
-  # TL$IMO <- wvd$`IMO No.`[match(TL$VesselName, wvd$Name)]
-  TL$Built <- wvd$Built[match(TL$VesselName, wvd$Name)]
-  TL$Operators <- wvd$`Commercial Operator`[match(TL$VesselName, wvd$Name)]
+  TL$VslType <- wvd()$`Vessel Type`[match(TL$VesselName, wvd()$Name)]
+  TL$Cubic <- wvd()$Cubics[match(TL$VesselName, wvd()$Name)]
+  TL$DWT <- wvd()$Dwt[match(TL$VesselName, wvd()$Name)]
+  TL$IceClass <- wvd()$`Ice Class`[match(TL$VesselName, wvd()$Name)]
+  # TL$IMO <- wvd()$`IMO No.`[match(TL$VesselName, wvd()$Name)]
+  TL$Built <- wvd()$Built[match(TL$VesselName, wvd()$Name)]
+  TL$Operators <- wvd()$`Commercial Operator`[match(TL$VesselName, wvd()$Name)]
   rowsnew <- nrow(readRDS('data/TonnageList.Rds'))
   
   for (i in 1:nrow(editedValue)) {
@@ -236,13 +257,13 @@ observeEvent(input$saveTLData, {
   ##################################
   
   TL <- readRDS('data/TonnageList.Rds')
-  TL$VslType <- wvd$`Vessel Type`[match(TL$VesselName, wvd$Name)]
-  TL$Cubic <- wvd$Cubics[match(TL$VesselName, wvd$Name)]
-  TL$DWT <- wvd$Dwt[match(TL$VesselName, wvd$Name)]
-  TL$IceClass <- wvd$`Ice Class`[match(TL$VesselName, wvd$Name)]
-  # TL$IMO <- wvd$`IMO No.`[match(TL$VesselName, wvd$Name)]
-  TL$Built <- wvd$Built[match(TL$VesselName, wvd$Name)]
-  TL$Operators <- wvd$`Commercial Operator`[match(TL$VesselName, wvd$Name)]
+  TL$VslType <- wvd()$`Vessel Type`[match(TL$VesselName, wvd()$Name)]
+  TL$Cubic <- wvd()$Cubics[match(TL$VesselName, wvd()$Name)]
+  TL$DWT <- wvd()$Dwt[match(TL$VesselName, wvd()$Name)]
+  TL$IceClass <- wvd()$`Ice Class`[match(TL$VesselName, wvd()$Name)]
+  # TL$IMO <- wvd()$`IMO No.`[match(TL$VesselName, wvd()$Name)]
+  TL$Built <- wvd()$Built[match(TL$VesselName, wvd()$Name)]
+  TL$Operators <- wvd()$`Commercial Operator`[match(TL$VesselName, wvd()$Name)]
   
   TL %>% filter(VslType %in% c(input$vtypeTL, ""," ",NA)) %>% filter(DWT >= input$DWTTL[1] & DWT <= input$DWTTL[2] | DWT %in% c(""," ",NA)) %>%
     filter(Cubic >= input$CubicTL[1] & Cubic <= input$CubicTL[2] | Cubic %in% c(""," ",NA)) %>%
@@ -268,13 +289,13 @@ observeEvent(input$saveTLData2, {
     ungroup()
   
   TL <- readRDS('data/TonnageList.Rds')
-  TL$VslType <- wvd$`Vessel Type`[match(TL$VesselName, wvd$Name)]
-  TL$Cubic <- wvd$Cubics[match(TL$VesselName, wvd$Name)]
-  TL$DWT <- wvd$Dwt[match(TL$VesselName, wvd$Name)]
-  TL$IceClass <- wvd$`Ice Class`[match(TL$VesselName, wvd$Name)]
-  # TL$IMO <- wvd$`IMO No.`[match(TL$VesselName, wvd$Name)]
-  TL$Built <- wvd$Built[match(TL$VesselName, wvd$Name)]
-  TL$Operators <- wvd$`Commercial Operator`[match(TL$VesselName, wvd$Name)]
+  TL$VslType <- wvd()$`Vessel Type`[match(TL$VesselName, wvd()$Name)]
+  TL$Cubic <- wvd()$Cubics[match(TL$VesselName, wvd()$Name)]
+  TL$DWT <- wvd()$Dwt[match(TL$VesselName, wvd()$Name)]
+  TL$IceClass <- wvd()$`Ice Class`[match(TL$VesselName, wvd()$Name)]
+  # TL$IMO <- wvd()$`IMO No.`[match(TL$VesselName, wvd()$Name)]
+  TL$Built <- wvd()$Built[match(TL$VesselName, wvd()$Name)]
+  TL$Operators <- wvd()$`Commercial Operator`[match(TL$VesselName, wvd()$Name)]
   rowsnew <- nrow(readRDS('data/TonnageList.Rds'))
   
   for (i in 1:nrow(editedValue)) {
@@ -296,13 +317,13 @@ observeEvent(input$saveTLData2, {
   ##################################
   
   TL <- readRDS('data/TonnageList.Rds')
-  TL$VslType <- wvd$`Vessel Type`[match(TL$VesselName, wvd$Name)]
-  TL$Cubic <- wvd$Cubics[match(TL$VesselName, wvd$Name)]
-  TL$DWT <- wvd$Dwt[match(TL$VesselName, wvd$Name)]
-  TL$IceClass <- wvd$`Ice Class`[match(TL$VesselName, wvd$Name)]
-  # TL$IMO <- wvd$`IMO No.`[match(TL$VesselName, wvd$Name)]
-  TL$Built <- wvd$Built[match(TL$VesselName, wvd$Name)]
-  TL$Operators <- wvd$`Commercial Operator`[match(TL$VesselName, wvd$Name)]
+  TL$VslType <- wvd()$`Vessel Type`[match(TL$VesselName, wvd()$Name)]
+  TL$Cubic <- wvd()$Cubics[match(TL$VesselName, wvd()$Name)]
+  TL$DWT <- wvd()$Dwt[match(TL$VesselName, wvd()$Name)]
+  TL$IceClass <- wvd()$`Ice Class`[match(TL$VesselName, wvd()$Name)]
+  # TL$IMO <- wvd()$`IMO No.`[match(TL$VesselName, wvd()$Name)]
+  TL$Built <- wvd()$Built[match(TL$VesselName, wvd()$Name)]
+  TL$Operators <- wvd()$`Commercial Operator`[match(TL$VesselName, wvd()$Name)]
   
   TL %>% filter(VslType %in% c(input$vtypeTL, ""," ",NA)) %>% filter(DWT >= input$DWTTL[1] & DWT <= input$DWTTL[2] | DWT %in% c(""," ",NA)) %>%
     filter(Cubic >= input$CubicTL[1] & Cubic <= input$CubicTL[2] | Cubic %in% c(""," ",NA)) %>%
@@ -330,13 +351,15 @@ output$BizTon2 <- output$BizTon <- renderDT({
   }))
   BT$ROWIDT <- ""
   # BT <- BT %>% select(VesselName:Comments,VslType:Owner, UpdatedBy, timestamp, ROWIDT)
+  BT <- arrange(BT, desc(ReportTimestamp))
   TonVal$BT <- BT
 
   datatable(BT, rownames = FALSE, extensions = 'Buttons', filter = 'top',
             options = list(deferRender = TRUE,scroller = FALSE,scrollX = TRUE,
                            dom = 'Blfrtip', buttons = c('copy', 'csv', 'excel', 'pdf', 'print',I('colvis')),
                            pageLength = 10,lengthMenu = list(c(10,20, 50,-1), list('10', '20', '50','All')), paging = T,
-                           columnDefs = list(list(visible = FALSE, targets = c(13,14)))))
+                           columnDefs = list(list(visible = FALSE, targets = c(12,14,15)))))
+            
 }, server = TRUE)
 
 proxy = dataTableProxy('BizTon')
@@ -351,24 +374,28 @@ observeEvent(input$shiftcellsTL, {
   df$timestamp <- epochTime()
   username <- user()
   df$UpdatedBy <- username
-  df$VslType <- wvd$`Vessel Type`[match(df$VesselName, wvd$Name)]
-  df$Cubic <- wvd$Cubics[match(df$VesselName, wvd$Name)]
-  df$DWT <- wvd$Dwt[match(df$VesselName, wvd$Name)]
-  df$IceClass <- wvd$`Ice Class`[match(df$VesselName, wvd$Name)]
-  # df$IMO <- wvd$`IMO No.`[match(df$VesselName, wvd$Name)]
-  df$Built <- wvd$Built[match(df$VesselName, wvd$Name)]
-  df$Operators <- wvd$`Commercial Operator`[match(df$VesselName, wvd$Name)]
-
+  df$VslType <- wvd()$`Vessel Type`[match(df$VesselName, wvd()$Name)]
+  df$Cubic <- wvd()$Cubics[match(df$VesselName, wvd()$Name)]
+  df$DWT <- wvd()$Dwt[match(df$VesselName, wvd()$Name)]
+  df$IceClass <- wvd()$`Ice Class`[match(df$VesselName, wvd()$Name)]
+  # df$IMO <- wvd()$`IMO No.`[match(df$VesselName, wvd()$Name)]
+  df$Built <- wvd()$Built[match(df$VesselName, wvd()$Name)]
+  df$Operators <- wvd()$`Commercial Operator`[match(df$VesselName, wvd()$Name)]
+  df <- df %>% select(-ReportTimestamp)
+  df$OpenDate <- mdy(as.character(df$OpenDate))
+  # valuesTL$TonnageList$OpenDate <- mdy(as.character(valuesTL$TonnageList$OpenDate))
+  print(str(df))
+  print(str(valuesTL$TonnageList))
   valuesTL[["TonnageList"]] <- rbind(valuesTL[["TonnageList"]], df)
   saveRDS(valuesTL[["TonnageList"]], 'data/TonnageList.Rds')
   TL <- readRDS('data/TonnageList.Rds')
-  TL$VslType <- wvd$`Vessel Type`[match(TL$VesselName, wvd$Name)]
-  TL$Cubic <- wvd$Cubics[match(TL$VesselName, wvd$Name)]
-  TL$DWT <- wvd$Dwt[match(TL$VesselName, wvd$Name)]
-  TL$IceClass <- wvd$`Ice Class`[match(TL$VesselName, wvd$Name)]
-  # TL$IMO <- wvd$`IMO No.`[match(TL$VesselName, wvd$Name)]
-  TL$Built <- wvd$Built[match(TL$VesselName, wvd$Name)]
-  TL$Operators <- wvd$`Commercial Operator`[match(TL$VesselName, wvd$Name)]
+  TL$VslType <- wvd()$`Vessel Type`[match(TL$VesselName, wvd()$Name)]
+  TL$Cubic <- wvd()$Cubics[match(TL$VesselName, wvd()$Name)]
+  TL$DWT <- wvd()$Dwt[match(TL$VesselName, wvd()$Name)]
+  TL$IceClass <- wvd()$`Ice Class`[match(TL$VesselName, wvd()$Name)]
+  # TL$IMO <- wvd()$`IMO No.`[match(TL$VesselName, wvd()$Name)]
+  TL$Built <- wvd()$Built[match(TL$VesselName, wvd()$Name)]
+  TL$Operators <- wvd()$`Commercial Operator`[match(TL$VesselName, wvd()$Name)]
 
   valuesTL[["TonnageList"]] <- TL
   proxy %>% selectRows(NULL)
@@ -385,24 +412,24 @@ observeEvent(input$shiftcellsTL2, {
   df$timestamp <- epochTime()
   username <- user()
   df$UpdatedBy <- username
-  df$VslType <- wvd$`Vessel Type`[match(df$VesselName, wvd$Name)]
-  df$Cubic <- wvd$Cubics[match(df$VesselName, wvd$Name)]
-  df$DWT <- wvd$Dwt[match(df$VesselName, wvd$Name)]
-  df$IceClass <- wvd$`Ice Class`[match(df$VesselName, wvd$Name)]
-  # df$IMO <- wvd$`IMO No.`[match(df$VesselName, wvd$Name)]
-  df$Built <- wvd$Built[match(df$VesselName, wvd$Name)]
-  df$Operators <- wvd$`Commercial Operator`[match(df$VesselName, wvd$Name)]
-  
+  df$VslType <- wvd()$`Vessel Type`[match(df$VesselName, wvd()$Name)]
+  df$Cubic <- wvd()$Cubics[match(df$VesselName, wvd()$Name)]
+  df$DWT <- wvd()$Dwt[match(df$VesselName, wvd()$Name)]
+  df$IceClass <- wvd()$`Ice Class`[match(df$VesselName, wvd()$Name)]
+  # df$IMO <- wvd()$`IMO No.`[match(df$VesselName, wvd()$Name)]
+  df$Built <- wvd()$Built[match(df$VesselName, wvd()$Name)]
+  df$Operators <- wvd()$`Commercial Operator`[match(df$VesselName, wvd()$Name)]
+  df <- df %>% select(-ReportTimestamp)
   valuesTL[["TonnageList"]] <- rbind(valuesTL[["TonnageList"]], df)
   saveRDS(valuesTL[["TonnageList"]], 'data/TonnageList.Rds')
   TL <- readRDS('data/TonnageList.Rds')
-  TL$VslType <- wvd$`Vessel Type`[match(TL$VesselName, wvd$Name)]
-  TL$Cubic <- wvd$Cubics[match(TL$VesselName, wvd$Name)]
-  TL$DWT <- wvd$Dwt[match(TL$VesselName, wvd$Name)]
-  TL$IceClass <- wvd$`Ice Class`[match(TL$VesselName, wvd$Name)]
-  # TL$IMO <- wvd$`IMO No.`[match(TL$VesselName, wvd$Name)]
-  TL$Built <- wvd$Built[match(TL$VesselName, wvd$Name)]
-  TL$Operators <- wvd$`Commercial Operator`[match(TL$VesselName, wvd$Name)]
+  TL$VslType <- wvd()$`Vessel Type`[match(TL$VesselName, wvd()$Name)]
+  TL$Cubic <- wvd()$Cubics[match(TL$VesselName, wvd()$Name)]
+  TL$DWT <- wvd()$Dwt[match(TL$VesselName, wvd()$Name)]
+  TL$IceClass <- wvd()$`Ice Class`[match(TL$VesselName, wvd()$Name)]
+  # TL$IMO <- wvd()$`IMO No.`[match(TL$VesselName, wvd()$Name)]
+  TL$Built <- wvd()$Built[match(TL$VesselName, wvd()$Name)]
+  TL$Operators <- wvd()$`Commercial Operator`[match(TL$VesselName, wvd()$Name)]
   
   valuesTL[["TonnageList"]] <- TL
   proxy %>% selectRows(NULL)

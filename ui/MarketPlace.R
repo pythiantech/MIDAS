@@ -41,9 +41,9 @@ tabPanel(
               #   "The ones in 'orange' have voyages expiring in a week's time",
               #   "and vessels displayed in 'green' color have voyages expiring from a week to 30 days.",br(),br(),
                 leafletOutput('posListMap', height = 600, width = "100%")
-              ),
-              bsModal("leafMap", "Vessel History", "show", size = 'large',
-                      leafletOutput("shipmap", width = "100%", height = 400) )
+              )
+              # bsModal("leafMap", "Vessel History", "show", size = 'large',
+              #         leafletOutput("shipmap", width = "100%", height = 400) )
             ),
             ###########################################
             div(
@@ -187,11 +187,11 @@ tabPanel(
                 div(class = "section_box_divider"),
                 uiOutput('gradeFilter'),
                 div(class = "section_box_divider"),
-                sliderInput('DWTPL',"Filter by DWT",value = c(min(wvd$Dwt, na.rm = T),max(wvd$Dwt, na.rm = T)),
-                            min = min(wvd$Dwt, na.rm = T),max = max(wvd$Dwt, na.rm = T)),
+                uiOutput('DWPTL'),
+                
                 div(class = "section_box_divider"),
-                sliderInput('CubicsPL',"Filter by Cubics",value = c(min(wvd$Cubics, na.rm = T),max(wvd$Cubics, na.rm = T)),
-                            min = min(wvd$Cubics, na.rm = T),max = max(wvd$Cubics, na.rm = T)),
+                uiOutput('CubicsPL'),
+                
                 div(class = "section_box_divider"),
                 sliderInput('builtFilter', "Filter by Age of Vessel", min = 0, max = 30, value = 30)
               )
@@ -209,12 +209,12 @@ tabPanel(
                 class = "section_box_body",
                 # div(class = "section_box_subtitle", "Vessel Location over the last 5 Days"),
                 # leafletOutput("shipmap", width = "100%", height = 200),
-                div(class = "section_box_subtitle", "View Vessel History"),
-                actionButton("show", "Click to view history"),
+                # div(class = "section_box_subtitle", "View Vessel History"),
+                # actionButton("show", "Click to view history"),
                 # div(class = "section_box_divider"),
                 # div(class = "section_box_subtitle", "Last three cargoes"),
                 # DT::dataTableOutput("cargoDT"),
-                div(class = "section_box_divider"),
+                # div(class = "section_box_divider"),
                 "The vessel is headed to",
                 tags$strong(textOutput("ROB_headed", inline = TRUE)), br(),
                 "Expected to reach on",
@@ -268,6 +268,10 @@ tabPanel(
                               color = "success",
                               icon = icon("thumbs-up")),
                    useShinyalert(),
+                   br(), br(),
+                   actionBttn('Refresh',"Refresh",style = "jelly",
+                              color = "success",
+                              icon = icon("sync")),
                    div(class = "section_box_divider"),
                    uiOutput('cstatus'),
                    uiOutput('vtypePL'),
@@ -402,18 +406,16 @@ tabPanel(
                class = "section_box_body",
                "Please use this form to add details on tonnage information.
                You can also use filters below to customize your view.", br(),br(),
-               pickerInput('vtypeTL',"Filter by Vessel Type", choices = levels(as.factor(wvd$`Vessel Type`)),
-                           options = list(`actions-box` = TRUE),multiple = T, selected = levels(as.factor(wvd$`Vessel Type`))),
+               uiOutput('vtypeTL'),
+               
                pickerInput('EmpTL',"Filter by Status", choices = c("Fixed","Unfixed","Hold",
                                                                    "Subs","Others","Died", "Looking","Open","WDWF",""),
                            options = list(`actions-box` = TRUE),multiple = T, selected = c("Fixed","Unfixed","Hold",
                                                                                            "Subs","Others","Died", "Looking","Open","WDWF","")),
-               sliderInput('DWTTL',"Filter by DWT",value = c(min(wvd$Dwt, na.rm = T),max(wvd$Dwt, na.rm = T)),
-                           min = min(wvd$Dwt, na.rm = T),max = max(wvd$Dwt, na.rm = T)),
-               pickerInput('OprTL',"Filter by Operator", choices = levels(as.factor(wvd$`Commercial Operator`)),
-                           options = list(`actions-box` = TRUE,`live-search` = TRUE),multiple = T, selected = levels(as.factor(wvd$`Commercial Operator`))),
-               sliderInput('CubicTL',"Filter by Cubic",value = c(min(wvd$Cubics, na.rm = T),max(wvd$Cubics, na.rm = T)),
-                           min = min(wvd$Cubics, na.rm = T),max = max(wvd$Cubics, na.rm = T)),
+               uiOutput('DWTTL'),
+               uiOutput('OprTL'),
+               uiOutput('CubicTL'),
+               
                dateRangeInput('OpenPortDate',"Filter by Open Port Date", start = (Sys.Date() - 30), end = Sys.Date() + 30),
                br(), br(),
                actionBttn('ResetFilt',"Reset Filters",style = "jelly",

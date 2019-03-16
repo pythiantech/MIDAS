@@ -56,25 +56,26 @@ vesselConstruction <- hchart(obsm, "column", hcaes(x=VslType,y = Count, group = 
 
 ##########################################################################################################
 #Existing Active fleet
-Active <- wvd %>% group_by(OwnerGroup=`Owner Group`,VslType=`Vessel Type`) %>% summarise(Count=n()) %>% arrange(OwnerGroup) %>%
-  mutate(Year = "Present")
-Active <- select(Active, OwnerGroup, VslType, Year, Count)
-Ordered <- orderbook %>% group_by(OwnerGroup, VslType, Year=year(Built)) %>% summarise(Count=n()) %>% arrange(OwnerGroup)
-Ordered$Year <- as.character(Ordered$Year)
-combineds <- bind_rows(Active,Ordered) %>% arrange(OwnerGroup)
-combineds <- spread(combineds, Year, Count)
-combineds[is.na(combineds)] <- 0
-rm(Active,Ordered)
+
+# Active <- wvd %>% group_by(OwnerGroup=`Owner Group`,VslType=`Vessel Type`) %>% summarise(Count=n()) %>% arrange(OwnerGroup) %>%
+#   mutate(Year = "Present")
+# Active <- select(Active, OwnerGroup, VslType, Year, Count)
+# Ordered <- orderbook %>% group_by(OwnerGroup, VslType, Year=year(Built)) %>% summarise(Count=n()) %>% arrange(OwnerGroup)
+# Ordered$Year <- as.character(Ordered$Year)
+# combineds <- bind_rows(Active,Ordered) %>% arrange(OwnerGroup)
+# combineds <- spread(combineds, Year, Count)
+# combineds[is.na(combineds)] <- 0
+# rm(Active,Ordered)
 
 #########################################
 #On Order
-orderbook$Age <- year(orderbook$Built)-year(Sys.Date())
-
-
-OnOrder <- orderbook %>% group_by(VslType) %>% summarise(Count=n())
-OnOrder$AgeClass <- rep("On Order", nrow(OnOrder))
-OnOrder <- OnOrder %>% select(`Vessel Type`=VslType, AgeClass, Count)
-PresentVsls <- wvd %>% group_by(`Vessel Type`, AgeClass) %>% summarise(Count=n())
-
-consolidated <- bind_rows(PresentVsls,OnOrder) %>% arrange(`Vessel Type`)
+# orderbook$Age <- year(orderbook$Built)-year(Sys.Date())
+# 
+# 
+# OnOrder <- orderbook %>% group_by(VslType) %>% summarise(Count=n())
+# OnOrder$AgeClass <- rep("On Order", nrow(OnOrder))
+# OnOrder <- OnOrder %>% select(`Vessel Type`=VslType, AgeClass, Count)
+# PresentVsls <- wvd() %>% group_by(`Vessel Type`, AgeClass) %>% summarise(Count=n())
+# 
+# consolidated <- bind_rows(PresentVsls,OnOrder) %>% arrange(`Vessel Type`)
 

@@ -131,8 +131,34 @@ output$Builder <- renderHighchart({
     hc_subtitle(text = paste("Control the min. number of constructions by the numeric slider"))
 })
 
+output$vslclass <- renderUI({
+  orderbook$Age <- year(orderbook$Built)-year(Sys.Date())
+  
+  
+  OnOrder <- orderbook %>% group_by(VslType) %>% summarise(Count=n())
+  OnOrder$AgeClass <- rep("On Order", nrow(OnOrder))
+  OnOrder <- OnOrder %>% select(`Vessel Type`=VslType, AgeClass, Count)
+  PresentVsls <- wvd() %>% group_by(`Vessel Type`, AgeClass) %>% summarise(Count=n())
+  
+  consolidated <- bind_rows(PresentVsls,OnOrder) %>% arrange(`Vessel Type`)
+  
+    selectInput('vslclass', 'Select vessel type',
+                choices = levels(as.factor(consolidated$`Vessel Type`)),
+                selected = "Handy")
+  
+})
 output$ByAge <- renderHighchart({
+  orderbook$Age <- year(orderbook$Built)-year(Sys.Date())
+  
+  
+  OnOrder <- orderbook %>% group_by(VslType) %>% summarise(Count=n())
+  OnOrder$AgeClass <- rep("On Order", nrow(OnOrder))
+  OnOrder <- OnOrder %>% select(`Vessel Type`=VslType, AgeClass, Count)
+  PresentVsls <- wvd() %>% group_by(`Vessel Type`, AgeClass) %>% summarise(Count=n())
+  
+  consolidated <- bind_rows(PresentVsls,OnOrder) %>% arrange(`Vessel Type`)
   consolid <- consolidated %>% filter(`Vessel Type` == input$vslclass)
+  
   highchart() %>%
     hc_add_series(consolid,hcaes(x = 'AgeClass',y = "Count"), type = "pie",
                   dataLabels = list(enabled = TRUE),innerSize = '40%', size = '80%',
@@ -146,7 +172,31 @@ output$ByOwner <- renderHighchart({
   ByOwner
 })
 
+output$OwnerGroup <- renderUI({
+  Active <- wvd() %>% group_by(OwnerGroup=`Owner Group`,VslType=`Vessel Type`) %>% summarise(Count=n()) %>% arrange(OwnerGroup) %>%
+    mutate(Year = "Present")
+  Active <- select(Active, OwnerGroup, VslType, Year, Count)
+  Ordered <- orderbook %>% group_by(OwnerGroup, VslType, Year=year(Built)) %>% summarise(Count=n()) %>% arrange(OwnerGroup)
+  Ordered$Year <- as.character(Ordered$Year)
+  combineds <- bind_rows(Active,Ordered) %>% arrange(OwnerGroup)
+  combineds <- spread(combineds, Year, Count)
+  rm(Active,Ordered)
+  combineds[is.na(combineds)] <- 0
+  selectInput('OwnerGroup','Select Owner Group',
+              choices = levels(as.factor(combineds$OwnerGroup)),
+              selected = "Scorpio Group")
+})
+
 output$OBAF <- renderHighchart({
+  Active <- wvd() %>% group_by(OwnerGroup=`Owner Group`,VslType=`Vessel Type`) %>% summarise(Count=n()) %>% arrange(OwnerGroup) %>%
+    mutate(Year = "Present")
+  Active <- select(Active, OwnerGroup, VslType, Year, Count)
+  Ordered <- orderbook %>% group_by(OwnerGroup, VslType, Year=year(Built)) %>% summarise(Count=n()) %>% arrange(OwnerGroup)
+  Ordered$Year <- as.character(Ordered$Year)
+  combineds <- bind_rows(Active,Ordered) %>% arrange(OwnerGroup)
+  combineds <- spread(combineds, Year, Count)
+  rm(Active,Ordered)
+  combineds[is.na(combineds)] <- 0
   req(input$OwnerGroup)
   combineds <- combineds %>% filter(OwnerGroup == input$OwnerGroup)
   OBA <- highchart() %>%

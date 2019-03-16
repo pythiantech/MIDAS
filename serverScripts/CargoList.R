@@ -26,15 +26,15 @@ CLData <- reactive({
   
   saveRDS(CL, 'data/CargoList.Rds')
   CL <- readRDS('data/CargoList.Rds')
-  CL$VslType <- wvd$`Vessel Type`[match(CL$Vessel, wvd$Name)]
-  CL$Operator <- wvd$`Commercial Operator`[match(CL$Vessel, wvd$Name)]
+  CL$VslType <- wvd()$`Vessel Type`[match(CL$Vessel, wvd()$Name)]
+  CL$Operator <- wvd()$`Commercial Operator`[match(CL$Vessel, wvd()$Name)]
   CL$Select <- as.logical(CL$Select)
   CL$Region <- toupper(CL$Region)
   
   saveRDS(CL, 'data/CargoList.Rds')
   CL <- readRDS('data/CargoList.Rds')
-  CL$VslType <- wvd$`Vessel Type`[match(CL$Vessel, wvd$Name)]
-  CL$Operator <- wvd$`Commercial Operator`[match(CL$Vessel, wvd$Name)]
+  CL$VslType <- wvd()$`Vessel Type`[match(CL$Vessel, wvd()$Name)]
+  CL$Operator <- wvd()$`Commercial Operator`[match(CL$Vessel, wvd()$Name)]
   CL$Select <- as.logical(CL$Select)
   CL$Region <- toupper(CL$Region)
   
@@ -101,7 +101,7 @@ output$CargoListData2 <- output$CargoListData <- renderRHandsontable({
       hot_col(col = "Comments", type = NULL) %>%
       hot_col(col = "Status", type = "dropdown", source = c("Fixed","Unfixed","Hold",
                                                             "Subs","Others","Died", "Looking","Open","WDWF")) %>%
-      hot_col(col = "Vessel", type = "dropdown", source = wvd$Name) %>%
+      hot_col(col = "Vessel", type = "dropdown", source = wvd()$Name) %>%
       hot_col(col = "RateType", type = "dropdown", source = c("WS","Lumpsum","Frt Rate")) %>%
       hot_col(col = "Rate", type = NULL) %>%
       hot_col(col = "Broker", type = NULL) %>%
@@ -122,7 +122,7 @@ output$CargoListData2 <- output$CargoListData <- renderRHandsontable({
 edI <- reactiveValues(editedInfoCL = NA)
 
 observeEvent(input$CargoListData$changes$changes, {
-  
+  df <- hot_to_r(input$CargoListData)
   info <- input$CargoListData$changes$changes
   rowid <- info[[1]][[1]] <- info[[1]][[1]] + 1
   colid <- info[[1]][[2]] <- info[[1]][[2]] + 1
@@ -131,7 +131,8 @@ observeEvent(input$CargoListData$changes$changes, {
   oldtimestamp <- valuesCL[["CargoList"]][rowid,21]
   newtimestamp <- epochTime()
   username <- user()
-  ROWIDT <- as.integer(valuesCL[["CargoList"]][rowid,22])
+  # ROWIDT <- as.integer(valuesCL[["CargoList"]][rowid,22])
+  ROWIDT <- as.integer(df[rowid,22])
   info <- sapply(info, function(x) ifelse(x == "NULL", NA, x))
   rowsold <- nrow(readRDS('data/CargoList.Rds'))
   if (all(is.na(edI$editedInfoCL))) {
@@ -179,7 +180,7 @@ observeEvent(input$CargoListData$changes$changes, {
 
 ############################################################
 observeEvent(input$CargoListData2$changes$changes, {
-  
+  df <- hot_to_r(input$CargoListData2)
   info <- input$CargoListData2$changes$changes
   rowid <- info[[1]][[1]] <- info[[1]][[1]] + 1
   colid <- info[[1]][[2]] <- info[[1]][[2]] + 1
@@ -188,7 +189,8 @@ observeEvent(input$CargoListData2$changes$changes, {
   oldtimestamp <- valuesCL[["CargoList"]][rowid,21]
   newtimestamp <- epochTime()
   username <- user()
-  ROWIDT <- as.integer(valuesCL[["CargoList"]][rowid,22])
+  # ROWIDT <- as.integer(valuesCL[["CargoList"]][rowid,22])
+  ROOWIDT <- aas.integer(df[rowid,22])
   info <- sapply(info, function(x) ifelse(x == "NULL", NA, x))
   rowsold <- nrow(readRDS('data/CargoList.Rds'))
   if (all(is.na(edI$editedInfoCL))) {
@@ -236,6 +238,7 @@ observeEvent(input$CargoListData2$changes$changes, {
 
 #############################################################
 observeEvent(input$addRow, {
+  req(input$CargoListData)
   df <- hot_to_r(input$CargoListData)
   df <- df %>% add_row()
   valuesCL[["CargoList"]] <- df
@@ -243,6 +246,7 @@ observeEvent(input$addRow, {
 
 #############################################################
 observeEvent(input$addRow2, {
+  req(input$CargoListData2)
   df <- hot_to_r(input$CargoListData2)
   df <- df %>% add_row()
   valuesCL[["CargoList"]] <- df
@@ -260,8 +264,8 @@ observeEvent(input$saveCLData, {
     ungroup()
   
   CL <- readRDS('data/CargoList.Rds')
-  CL$VslType <- wvd$`Vessel Type`[match(CL$Vessel, wvd$Name)]
-  CL$Operator <- wvd$`Commercial Operator`[match(CL$Vessel, wvd$Name)]
+  CL$VslType <- wvd()$`Vessel Type`[match(CL$Vessel, wvd()$Name)]
+  CL$Operator <- wvd()$`Commercial Operator`[match(CL$Vessel, wvd()$Name)]
   CL$Select <- as.logical(CL$Select)
   CL$Region <- toupper(CL$Region)
   rowsnew <- nrow(readRDS('data/CargoList.Rds'))
@@ -277,7 +281,7 @@ observeEvent(input$saveCLData, {
     
     rowindex <- which(CL$ROWIDT == editedValue$ROWIDT[i])
     # print(rowindex)
-    if (editedValue$colid[i] != 5) CL[rowindex,editedValue$colid[i]] <- as.character(editedValue$newvalue[i])
+    if (editedValue$colid[i] != 18) CL[rowindex,editedValue$colid[i]] <- as.character(editedValue$newvalue[i])
     else CL[rowindex, editedValue$colid[i]] <- mdy(editedValue$newvalue[i])
     
     CL$ROWIDT[rowindex] <- editedValue$ROWIDT[i]
@@ -289,8 +293,8 @@ observeEvent(input$saveCLData, {
   
   ##################################
   CL <- readRDS('data/CargoList.Rds')
-  CL$VslType <- wvd$`Vessel Type`[match(CL$Vessel, wvd$Name)]
-  CL$Operator <- wvd$`Commercial Operator`[match(CL$Vessel, wvd$Name)]
+  CL$VslType <- wvd()$`Vessel Type`[match(CL$Vessel, wvd()$Name)]
+  CL$Operator <- wvd()$`Commercial Operator`[match(CL$Vessel, wvd()$Name)]
   CL$Select <- as.logical(CL$Select)
   CL$Region <- toupper(CL$Region)
   # updatePickerInput(session, 'InformationCL',selected = c("Market", "Private"))
@@ -325,8 +329,8 @@ observeEvent(input$saveCLData2, {
     ungroup()
   
   CL <- readRDS('data/CargoList.Rds')
-  CL$VslType <- wvd$`Vessel Type`[match(CL$Vessel, wvd$Name)]
-  CL$Operator <- wvd$`Commercial Operator`[match(CL$Vessel, wvd$Name)]
+  CL$VslType <- wvd()$`Vessel Type`[match(CL$Vessel, wvd()$Name)]
+  CL$Operator <- wvd()$`Commercial Operator`[match(CL$Vessel, wvd()$Name)]
   CL$Select <- as.logical(CL$Select)
   CL$Region <- toupper(CL$Region)
   rowsnew <- nrow(readRDS('data/CargoList.Rds'))
@@ -342,7 +346,7 @@ observeEvent(input$saveCLData2, {
     
     rowindex <- which(CL$ROWIDT == editedValue$ROWIDT[i])
     # print(rowindex)
-    if (editedValue$colid[i] != 5) CL[rowindex,editedValue$colid[i]] <- as.character(editedValue$newvalue[i])
+    if (editedValue$colid[i] != 18) CL[rowindex,editedValue$colid[i]] <- as.character(editedValue$newvalue[i])
     else CL[rowindex, editedValue$colid[i]] <- mdy(editedValue$newvalue[i])
     
     CL$ROWIDT[rowindex] <- editedValue$ROWIDT[i]
@@ -354,8 +358,8 @@ observeEvent(input$saveCLData2, {
   
   ##################################
   CL <- readRDS('data/CargoList.Rds')
-  CL$VslType <- wvd$`Vessel Type`[match(CL$Vessel, wvd$Name)]
-  CL$Operator <- wvd$`Commercial Operator`[match(CL$Vessel, wvd$Name)]
+  CL$VslType <- wvd()$`Vessel Type`[match(CL$Vessel, wvd()$Name)]
+  CL$Operator <- wvd()$`Commercial Operator`[match(CL$Vessel, wvd()$Name)]
   CL$Select <- as.logical(CL$Select)
   CL$Region <- toupper(CL$Region)
   # updatePickerInput(session, 'InformationCL',selected = c("Market", "Private"))
@@ -431,8 +435,8 @@ observeEvent(input$shiftcells, {
     
     saveRDS(CL, 'data/CargoList.Rds')
     CL <- readRDS('data/CargoList.Rds')
-    CL$VslType <- wvd$`Vessel Type`[match(CL$Vessel, wvd$Name)]
-    CL$Operator <- wvd$`Commercial Operator`[match(CL$Vessel, wvd$Name)]
+    CL$VslType <- wvd()$`Vessel Type`[match(CL$Vessel, wvd()$Name)]
+    CL$Operator <- wvd()$`Commercial Operator`[match(CL$Vessel, wvd()$Name)]
     CL$Select <- as.logical(CL$Select)
     CL$Region <- toupper(CL$Region)
     CL %>% dplyr::filter(Information %in% c(input$InformationCL,""," ",NA)) %>%
@@ -471,8 +475,8 @@ observeEvent(input$shiftcells2, {
     
     saveRDS(CL, 'data/CargoList.Rds')
     CL <- readRDS('data/CargoList.Rds')
-    CL$VslType <- wvd$`Vessel Type`[match(CL$Vessel, wvd$Name)]
-    CL$Operator <- wvd$`Commercial Operator`[match(CL$Vessel, wvd$Name)]
+    CL$VslType <- wvd()$`Vessel Type`[match(CL$Vessel, wvd()$Name)]
+    CL$Operator <- wvd()$`Commercial Operator`[match(CL$Vessel, wvd()$Name)]
     CL$Select <- as.logical(CL$Select)
     CL$Region <- toupper(CL$Region)
     CL %>% dplyr::filter(Information %in% c(input$InformationCL,""," ",NA)) %>%

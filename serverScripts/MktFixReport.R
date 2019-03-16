@@ -11,7 +11,7 @@ observeEvent(input$PullMkt, {
   SRD <- GetBizlemData('Spot', start, end)
   shinyjs::hide("page_shield")
   if (is.data.frame(SRD) && ncol(SRD) > 1) {
-    SRD$ReportDate <- dmy_hm(SRD$ReportDate)
+    # SRD$ReportDate <- dmy_hm(SRD$ReportDate)
     MktVal$MktFix <- SRD
     MktVal$Orig <- SRD
   }
@@ -22,10 +22,10 @@ observeEvent(input$PullMkt, {
 #https://stackoverflow.com/questions/22650737/empty-data-message-in-rendertable
 
 output$MktFixUI <- renderUI({
-  SRD <- req(BizSpot())
-  MktVal$MktFix <- SRD
-  MktVal$Orig <- SRD
-  
+  # SRD <- req(BizSpot())
+  # MktVal$MktFix <- SRD
+  # MktVal$Orig <- SRD
+  # 
   if (is.null(MktVal$MktFix))
     return("No Data To Show")
   

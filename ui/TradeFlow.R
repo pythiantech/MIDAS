@@ -292,16 +292,13 @@ tabPanel(
                             choices = c("Fleet Distribution", "Loading Areas","Discharging Areas"), selected = "Fleet Distribution"),
                 dateRangeInput('WorldDateRange', 'Select a date range', start = Sys.Date()-30,
                                   end=Sys.Date()),
-                pickerInput('Operator',"Select Commercial Operator", choices = levels(as.factor(wvd$`Commercial Operator`)),
-                            options = list(`actions-box` = TRUE,`live-search`=TRUE)),
-                # pickerInput('Owner',"Select Vessel Owner", choices = levels(as.factor(wvd$`Owner Group`)),
+                uiOutput('Operator'),
+                
+                # pickerInput('Owner',"Select Vessel Owner", choices = levels(as.factor(wvd()$`Owner Group`)),
                 #             options = list(`actions-box` = TRUE,`live-search`=TRUE),multiple = T),
-                pickerInput('VesselT',"Select Vessel Type", choices = levels(as.factor(wvd$`Vessel Type`)),multiple = TRUE,
-                            selected = levels(as.factor(wvd$`Vessel Type`)), 
-                            options = list(`actions-box` = TRUE,`live-search`=TRUE)),
-                pickerInput('CargoTypeWF', 'Filter by Cargo Type', choices = levels(as.factor(wvd$Type)),multiple = TRUE,
-                            selected = levels(as.factor(wvd$Type)), 
-                            options = list(`actions-box` = TRUE, `live-search` = TRUE)),
+                uiOutput('VesselT'),
+                uiOutput('CargoTypeWF'),
+                
                 actionBttn('DBexecute',"Execute Query",style = "jelly",
                            color = "primary",
                            icon = icon("rocket"))

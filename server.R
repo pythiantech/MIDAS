@@ -5,7 +5,7 @@ function(input, output, session) {
   
   #Read working data
   env <- reactiveFileReader(
-    intervalMillis = 120*60*1000,
+    intervalMillis = 6*60*60*1000,
     session = session,
     filePath = config$workingdatadir,
     readFunc = LoadToEnvironment
@@ -32,7 +32,7 @@ function(input, output, session) {
   ####################################################################################################
   
   #Reactively load WVD
-  envWVD <- reactiveFileReader(
+  envDraft <- reactiveFileReader(
     intervalMillis = 30*60*1000,
     session = session,
     filePath = config$compfleetpath,
@@ -40,7 +40,7 @@ function(input, output, session) {
   )
   
   Draft <- reactive({
-    Dft <- envWVD()[[names(envWVD())[1]]]
+    Dft <- envDraft()[[names(envDraft())[1]]]
     Dft$LOA <- as.numeric(Dft$LOA)
     Dft$draught <- as.numeric(Dft$draught)
     Dft$lat <- as.numeric(Dft$lat)
@@ -54,12 +54,12 @@ function(input, output, session) {
       Dft$LegS[i] <- ifelse(Dft$Leg[i] == "Ballast", '<img src="img/Ballast.png" height="20px" width="20px"></img>',
                               '<img src="img/Laden.png" height="20px" width="20px"></img>')
     }
-    Dft$Operator <- wvd$`Commercial Operator`[match(Dft$mmsi, wvd$MMSI)]
-    Dft$IMO <- wvd$`IMO No.`[match(Dft$mmsi, wvd$MMSI)]
-    Dft$Built <- wvd$Built[match(Dft$mmsi, wvd$MMSI)]
-    Dft$IMOType <- wvd$`IMO Type`[match(Dft$mmsi, wvd$MMSI)]
+    Dft$Operator <- wvd()$`Commercial Operator`[match(Dft$mmsi, wvd()$MMSI)]
+    Dft$IMO <- wvd()$`IMO No.`[match(Dft$mmsi, wvd()$MMSI)]
+    Dft$Built <- wvd()$Built[match(Dft$mmsi, wvd()$MMSI)]
+    Dft$IMOType <- wvd()$`IMO Type`[match(Dft$mmsi, wvd()$MMSI)]
     Dft$IMOType[Dft$IMOType %!in% c('IMO I', 'IMO II', 'IMO III')] <- "Not Available"
-    Dft$CargoType <- wvd$Type[match(Dft$mmsi, wvd$MMSI)]
+    Dft$CargoType <- wvd()$Type[match(Dft$mmsi, wvd()$MMSI)]
     Dft
   })
   #########################################################################
@@ -110,6 +110,38 @@ function(input, output, session) {
   BizBTCR <- reactive({
     BTCR <- envBizBTCR()
     BTCR
+  })
+  #########################################################
+  envWVD <- reactiveFileReader(
+    intervalMillis = 60*60*1000, #Read every hour
+    session = session,
+    filePath = '/home/data/wvd.Rds',
+    readFunc = readRDS
+  )
+  wvd <- reactive({
+    WVD <- envWVD()
+    WVD$VesselDetails <- paste0("<div style = 'font-size:12px;float:left'>
+            <span style = 'font-size:16px;font-weight:bold'>",WVD$Name,"</span><br/>",
+                                "<br/><span style = 'font-size:10px'>Year Built:",WVD$Built,"</span><br/>",
+                                "<span style = 'font-size:10px'>DWT:",WVD$Dwt,"</span><br/>",
+                                "<span style = 'font-size:10px'>Cubic:",WVD$Cubics,"</span><br/>",
+                                "<span style = 'font-size:10px'>Ice Class:",WVD$`Ice Class`,"</span><br/>",
+                                "<span style = 'font-size:10px'>IMO:",WVD$`IMO No.`,"</span><br/>",
+                                "<span style = 'font-size:10px'>Ship Type:",WVD$`Vessel Type`,"</span><br/>",
+                                "<span style = 'font-size:10px'>Owner:",WVD$`Owner Group`,"</span>
+        </div>")
+    
+    WVD$Age <- year(Sys.Date())-WVD$Built
+    WVD$AgeClass <- ifelse(WVD$Age<=5, "0-5 Years Old",
+                           ifelse(WVD$Age<=10 & WVD$Age>5, "6-10 Years Old",
+                                  ifelse(WVD$Age<=15 & WVD$Age>10, "11-15 Years Old",
+                                         ifelse(WVD$Age<=20 & WVD$Age>15, "16-20 Years Old", "Above 20 Years Old")) ))
+    
+    WVD <- WVD %>% filter(`Vessel Type` %!in% c('Kamsarmax', 'Ultramax'))
+    WVD <- WVD[!duplicated(WVD$MMSI),]
+    WVD$Cubics <- as.numeric(WVD$Cubics)
+    WVD$MMSI <- as.numeric(WVD$MMSI)
+    WVD
   })
   #######################################################################
   EDWlatest <- reactive(EDW() %>% group_by(ves_code) %>% filter(voy_no_int == max(voy_no_int)) %>%
@@ -229,7 +261,7 @@ function(input, output, session) {
           save_result_to <- NULL
         }
 
-        MMSI <- unique(stratum_vdimvessel() %>% filter(Dim_Vessel_Id == ShipID) %>% pull(mmsi))
+        MMSI <- unique(UniqueVessels() %>% filter(Dim_Vessel_Id == ShipID) %>% pull(mmsi))
         timeframe <- Sys.Date() - 10
         if(config$ds == 'local') {result <- tbl(pool, "WVDList") %>% select(mmsi, timestamp, lat, lon) %>%
           filter(mmsi == MMSI) %>% filter(!is.na(lat)) %>%
@@ -255,43 +287,43 @@ function(input, output, session) {
     #########################################################################################
 
     ##Fetch Voyage Data
-    fetch_voyage_data <- function(ShipId,startperiod, stopperiod) {
+    # fetch_voyage_data <- function(ShipId,startperiod, stopperiod) {
+    # 
+    #   if (MDIS_CACHE) {
+    # 
+    #     file <- paste0("data/cache/", ShipId, "_fetch_voyage_data.Rds")
+    #     if (file.exists(file) && file.info(file)$mtime > yesterday()) {
+    #       return(readRDS(file))
+    #     } else {
+    #       save_result_to <- file
+    #     }
+    #   } else {
+    #     save_result_to <- NULL
+    #   }
+    # 
+    #   MMSI <- unique(stratum_vdimvessel() %>% filter(Dim_Vessel_Id == ShipId) %>% pull(mmsi))
+    #   r2 <- GET(paste0(config$stratumurl,MMSI,"/",startperiod,"/",stopperiod),
+    #             add_headers(Authorization = auth_competitor))
+      # text_content <- content(r2, "text")
+      # result <- text_content %>% fromJSON()
+      # result$Color <- ifelse(result$sogKts < 3,"red",
+      #                        ifelse(result$sogKts < 8,"orange",
+      #                               ifelse(result$sogKts < 12,"yellow",
+      #                                      ifelse(result$sogKts < 20,"blue","green"))))
+      # result$lastColor <- dplyr::lag(result$Color)
+      # 
+      # 
+      # if (!is.null(save_result_to)) {
+      #   saveRDS(result, file)
+      # }
+      # return(result)
 
-      if (MDIS_CACHE) {
 
-        file <- paste0("data/cache/", ShipId, "_fetch_voyage_data.Rds")
-        if (file.exists(file) && file.info(file)$mtime > yesterday()) {
-          return(readRDS(file))
-        } else {
-          save_result_to <- file
-        }
-      } else {
-        save_result_to <- NULL
-      }
-
-      MMSI <- unique(stratum_vdimvessel() %>% filter(Dim_Vessel_Id == ShipId) %>% pull(mmsi))
-      r2 <- GET(paste0(config$stratumurl,MMSI,"/",startperiod,"/",stopperiod),
-                add_headers(Authorization = auth_competitor))
-      text_content <- content(r2, "text")
-      result <- text_content %>% fromJSON()
-      result$Color <- ifelse(result$sogKts < 3,"red",
-                             ifelse(result$sogKts < 8,"orange",
-                                    ifelse(result$sogKts < 12,"yellow",
-                                           ifelse(result$sogKts < 20,"blue","green"))))
-      result$lastColor <- dplyr::lag(result$Color)
-
-
-      if (!is.null(save_result_to)) {
-        saveRDS(result, file)
-      }
-      return(result)
-
-
-    }
+    # }
     ###################################
     ###################################
   VOI <- reactive(V_Dim_Voyage() %>% filter(VoyageEstimateExists == 'Voy With No Estimate' & CompleteGMT >= (Sys.Date() - 30) |
-                                   VoyageEstimateExists == 'Voy With Estimate' & CompleteGMT > (Sys.Date()) & CompleteGMT <= (Sys.Date() + 60),
+                                   VoyageEstimateExists == 'Voy With Estimate' & CompleteGMT > (Sys.Date()-5) & CompleteGMT <= (Sys.Date() + 60),
                                  oprType != 'RELT',
                                  oprType != 'OVTO',
                                  oprType != 'TCTO',
@@ -305,7 +337,7 @@ function(input, output, session) {
                   Flag_VoyageLoad_And_DischargeAreas_Equals_Estimate,
                   CommenceGMT,CompleteGMT,Fkey_Dim_Company_Id) %>%
     group_by(Fkey_Dim_Vessel_Id) %>% slice(which.max(CommenceGMT)))
-  
+  # print(nrow(VOI))
   ########################################
   noEstimate <- reactive(VOI() %>% filter(VoyageEstimateExists == 'Voy With No Estimate') %>% dplyr::select(Fkey_Dim_Vessel_Id) %>%
     left_join(V_Dim_Voyage()) %>%
@@ -335,7 +367,7 @@ function(input, output, session) {
     ) %>%
     ungroup() %>%
     dplyr::select(Fkey_Dim_Vessel_Id, Dim_Voyage_Id,VoyageNo = voyNum, Cargo = cargo_short, qtyBL) 
-
+    # print(nrow(VOI()))
   CG$Cargo <- ifelse(is.na(CG$Cargo) | CG$Cargo == "", "Data Unavailable", CG$Cargo)
   CG
   })
@@ -440,52 +472,72 @@ function(input, output, session) {
                                                         CurrentStatus, Comments, Flag,VesselName,DWT = dwt,Type = VesselType,IceClass,
                                                         CommenceGMT,CompleteGMT,Fkey_Dim_Vessel_Id,Fkey_Dim_Voyage_Id,Estimate)
 
-  FinalTable$UID <- ifelse(FinalTable$Estimate == 0,
-                           paste(FinalTable$Fkey_Dim_Vessel_Id, as.integer(FinalTable$CommenceGMT), sep = "_"),
-                           paste(FinalTable$Fkey_Dim_Vessel_Id, as.integer(FinalTable$CompleteGMT), sep = "_"))
+  # FinalTable$UID <- ifelse(FinalTable$Estimate == 0,
+  #                          paste(FinalTable$Fkey_Dim_Vessel_Id, as.integer(FinalTable$CommenceGMT), sep = "_"),
+  #                          paste(FinalTable$Fkey_Dim_Vessel_Id, as.integer(FinalTable$CompleteGMT), sep = "_"))
+    FinalTable$UID <- paste(FinalTable$Fkey_Dim_Vessel_Id, FinalTable$VoyageNo, sep = "_")
 
   FinalTable$Flag <- "No"
+  FinalTable$UpdatedBy <- ""
+  # saveRDS(FinalTable, 'FinalTable.Rds')
   FinalTable
   })
   
   ################################################################
   
   UniqueVessels <- reactive({
-  UV <- stratum_vdimvessel() %>% filter(Dim_Vessel_Id %in% unique(FinalTable1()$Fkey_Dim_Vessel_Id)) %>%
-    left_join(VOI2(), by = c("Dim_Vessel_Id" = "Fkey_Dim_Vessel_Id"))
-  UV$IMO <- V_Dim_Vessel()$imo_no[match(UV$Dim_Vessel_Id, V_Dim_Vessel()$Dim_Vessel_Id)]
-
+  UV <- FinalTable1() %>% 
+    left_join(V_Dim_Vessel(), by = c('Fkey_Dim_Vessel_Id' = 'Dim_Vessel_Id')) %>% 
+    dplyr::select(VesselName = VesselName.x,VesselType,IceClass=IceClass.x,Vessel_LastDryDock_Date,Fkey_Dim_Vessel_Id,
+                  Vessel_NextDryDock_Date,Vessel_NextSurvey_Date,Vessel_Next_Inspection_Date,
+                  Vessel_Last_Polish_Date,Vessel_LastCleaning_Date,VesselCode,OpenPort,OpenPortDate,
+                  CurrentStatus,RepositionPort,UID) %>% 
+    left_join(VOI2()) %>% distinct()
+  UV$IMO <- V_Dim_Vessel()$imo_no[match(UV$Fkey_Dim_Vessel_Id, V_Dim_Vessel()$Dim_Vessel_Id)]
+  
   UV$Vessel_Last_Polish_Date[UV$Vessel_Last_Polish_Date == ymd('2001-01-01')] <- NA
   UV$Vessel_LastCleaning_Date[UV$Vessel_LastCleaning_Date == ymd('2001-01-01')] <- NA
   UV$Vessel_LastDryDock_Date[UV$Vessel_LastDryDock_Date == ymd('2001-01-01')] <- NA
   UV$Vessel_Next_Inspection_Date[UV$Vessel_Next_Inspection_Date == ymd('2001-01-01')] <- NA
   UV$Vessel_NextDryDock_Date[UV$Vessel_NextDryDock_Date == ymd('2001-01-01')] <- NA
   UV$Vessel_NextSurvey_Date[UV$Vessel_NextSurvey_Date == ymd('2001-01-01')] <- NA
-
-  UV$OpenPort <- FinalTable1()$OpenPort[match(UV$VesselName.x, FinalTable1()$VesselName)]
-  UV$OpenPortDate <- FinalTable1()$OpenPortDate[match(UV$VesselName.x, FinalTable1()$VesselName)]
-  UV$CurrentStatus <- FinalTable1()$CurrentStatus[match(UV$VesselName.x, FinalTable1()$VesselName)]
+  
   UV$OpenPortDate <- UV$OpenPortDate + V_Dim_Ports()$TimeZone[match(UV$OpenPort, V_Dim_Ports()$PortName)]*3600
-  UV$RepositionPort <- FinalTable1()$RepositionPort[match(UV$VesselName.x, FinalTable1()$VesselName)]
+  #Get Positional Information
+  UV$mmsi <- Draft()$mmsi[match(toupper(UV$VesselName), toupper(Draft()$Name))]
+  UV$lat <- Draft()$lat[match(UV$mmsi, Draft()$mmsi)]
+  UV$lon <- Draft()$lon[match(UV$mmsi, Draft()$mmsi)]
+  UV$cog <- Draft()$cog[match(UV$mmsi, Draft()$mmsi)]
+  UV$sog <- Draft()$sogKts[match(UV$mmsi, Draft()$mmsi)]
+  UV <- UV %>% select(VesselName, VesselType, IceClass, Vessel_LastDryDock_Date, Dim_Vessel_Id=Fkey_Dim_Vessel_Id,
+                      Vessel_NextDryDock_Date,Vessel_NextSurvey_Date,Vessel_Next_Inspection_Date,Vessel_Last_Polish_Date,
+                      Vessel_LastCleaning_Date, VesselCode, lat, lon, cog, sog, mmsi, Dim_Voyage_Id, voyNum,
+                      Vsl_Code, Fkey_Dim_Ports_FirstLoad, Fkey_Dim_Ports_LastDischarge, VoyageEstimateExists,
+                      oprType,PortOfFirstLoad_PortName,PortOfLastDischarge_Portname,Estimate_PortOfFirstLoad_PortName,
+                      Estimate_PortOfLastDisch_PortName,Flag_VoyageLoad_And_DischargeAreas_Equals_Estimate,
+                      CommenceGMT,CompleteGMT,Fkey_Dim_Company_Id,Cargo,LastCargoGrade,IMO,OpenPort,
+                      OpenPortDate,CurrentStatus,RepositionPort,UID)
+  # saveRDS(UV,'UV.Rds')
   UV
   })
 
   ################################################################
   FinalTable <- reactive({
-  PosList <- read_csv('data/PositionList.csv')  
-  UPID <- unique(PosList$UID)
-  NUUID <- UPID[UPID %!in% FinalTable1()$UID]
-  
-  if (length(NUUID) > 0) {
-    PosList <- PosList %>% filter(UID %!in% NUUID)
-    write_csv(PosList, 'data/PositionList.csv')
-  }
+    
+  # PosList <- read_csv('data/PositionList.csv')  
+  # UPID <- unique(PosList$UID)
+  # NUUID <- UPID[UPID %!in% FinalTable1()$UID]
+  # 
+  # if (length(NUUID) > 0) {
+  #   PosList <- PosList %>% filter(UID %!in% NUUID)
+  #   write_csv(PosList, 'data/PositionList.csv')
+  # }
   
   ReadPosList <- read_csv('data/PositionList.csv')
   UPID <- unique(ReadPosList$UID)
   FT <- FinalTable1() %>% dplyr::filter(UID %!in% UPID)
   FT$ROWIDT <- seq(max(ReadPosList$ROWIDT) + 1, nrow(FT))
-  FT <- select(FinalTable, Flag, VesselName, VoyageNo, EmploymentStatus, OpenPort, OpenPortDate,
+  FT <- select(FT, Flag, VesselName, VoyageNo, EmploymentStatus, OpenPort, OpenPortDate,
                     Cargo, RepositionPort, RepositionDate, CurrentStatus, Comments,
                     Flag,DWT, Type, IceClass, CompleteGMT, UpdatedBy,ROWIDT, everything())
   write_csv(FT, 'data/PositionList.csv', append = TRUE)
@@ -505,7 +557,7 @@ function(input, output, session) {
 
   certData <- reactive({
     df <- CD()
-    df$VesselCode <- UniqueVessels()$VesselCode[match(df$Vessel, UniqueVessels()$boatName)]
+    df$VesselCode <- UniqueVessels()$VesselCode[match(toupper(df$Vessel), toupper(UniqueVessels()$VesselName))]
     df
   })
   
@@ -518,7 +570,7 @@ function(input, output, session) {
   )
   vettData <- reactive({
     df <- VD()
-    df$VesselCode <- UniqueVessels()$VesselCode[match(df$Vessel, UniqueVessels()$boatName)]
+    df$VesselCode <- UniqueVessels()$VesselCode[match(toupper(df$Vessel), toupper(UniqueVessels()$VesselName))]
     df
   })
 
@@ -528,7 +580,7 @@ function(input, output, session) {
   #Update all UIs with dependencies
   output$VslSOF <- renderUI({
     pickerInput('VslSOF','Select Vessel',
-                choices = levels(as.factor(UniqueVessels()$VesselName.x)),
+                choices = levels(as.factor(UniqueVessels()$VesselName)),
                 options = list(`actions-box` = TRUE, `live-search` = TRUE))
   })
 
@@ -574,16 +626,43 @@ function(input, output, session) {
 
 
   ######################################
-  
+  valPLD <- reactiveValues()
   PosListData <- reactive({
-    UV <- UniqueVessels() %>% filter(CompleteGMT <= (Sys.Date() + voydays()))
+    # saveRDS(UniqueVessels(), 'UV.Rds')
+    UV <- req(UniqueVessels())
+    # print(nrow(UniqueVessels()))
+    
+    # UV <- UV2 %>% dplyr::filter(CompleteGMT <= (Sys.Date() + voydays()))
+    # UV <- UV2[UV2$CompleteGMT <= (Sys.Date() + voydays()),]
+    # UV2 <- UV %>% filter(CompleteGMT <= (Sys.Date() + 10))
     UV$OpenDate <- substr(UV$OpenPortDate, 1, 10)
     UV$OpenTime <- substr(UV$OpenPortDate, 12, 19)
     UV$Area <- V_Dim_Ports()$Area[match(UV$RepositionPort, V_Dim_Ports()$PortName)]
-    UV$YearBuilt <- wvd$Built[match(toupper(UV$VesselName.x), wvd$Name)]
-    UV$DWT <- wvd$Dwt[match(toupper(UV$VesselName.x), wvd$Name)]
-    UV$Cubics <- wvd$Cubics[match(toupper(UV$VesselName.x), wvd$Name)]
-    
+    # UV$YearBuilt <- wvd()$Built[match(toupper(UV$VesselName), wvd()$Name)]
+    # UV$DWT <- wvd()$Dwt[match(toupper(UV$VesselName), wvd()$Name)]
+    # UV$Cubics <- wvd()$Cubics[match(toupper(UV$VesselName), wvd()$Name)]
+    UV$YearBuilt <- wvd()$Built[match(UV$IMO, wvd()$`IMO No.`)]
+    UV$DWT <- wvd()$Dwt[match(UV$IMO, wvd()$`IMO No.`)]
+    UV$Cubics <- wvd()$Cubics[match(UV$IMO, wvd()$`IMO No.`)]
+    UV$EmploymentStatus <- ""
+    # print(nrow(UniqueVessels()))
+    # print(nrow(UV))
+    # saveRDS(UV, 'Uv.Rds')
+    # print(is.null(valPLD$rv))
+    # if (!is.null(valPLD$rv)) {
+    #   #Common UIDs which are not to be changed
+    #   UIDs <- UV$UID[UV$UID %in% unique(valPLD$rv$UID)]
+    #   # print(UIDs)
+    #   UVTemp <- UV
+    #   UVTemp$RepositionPort[UV$UID %in% UIDs] <- valPLD$rv$RepositionPort[valPLD$rv$UID %in% UIDs]
+    #   UVTemp$EmploymentStatus[UV$UID %in% UIDs] <- valPLD$rv$EmploymentStatus[valPLD$rv$UID %in% UIDs]
+    #   valPLD$rv <- UVTemp
+    #   print(valPLD$rv$EmploymentStatus[1])
+    # }
+    # else 
+    # print(is.null(valPLD$rv))
+    valPLD$rv <- UV
+    # saveRDS(UV, 'data/PLD.Rds')
     UV
   })
 
@@ -597,24 +676,40 @@ function(input, output, session) {
                 multiple = TRUE)
                 
   })
+  ############################
+  #Filters dependent on wvd()
+  output$DWPTL <- renderUI({
+    sliderInput('DWTPL',"Filter by DWT",value = c(min(wvd()$Dwt, na.rm = T),max(wvd()$Dwt, na.rm = T)),
+                min = min(wvd()$Dwt, na.rm = T),max = max(wvd()$Dwt, na.rm = T))
+  })
+  output$CubicsPL <- renderUI({
+    sliderInput('CubicsPL',"Filter by Cubics",value = c(min(wvd()$Cubics, na.rm = T),max(wvd()$Cubics, na.rm = T)),
+                min = min(wvd()$Cubics, na.rm = T),max = max(wvd()$Cubics, na.rm = T))
+  })
 
   data <- reactive({
-    x <- req(PosListData())
-    x <- PosListData() %>% filter(VesselType %in% input$vtype) %>%
-           filter(Area %in% input$areaFilter) %>%
+    req(valPLD$rv)
+    # print(valPLD$rv$EmploymentStatus[1])
+    # print(valPLD$rv$RepositionPort[1])
+    # saveRDS(valPLD$rv, "PS.Rds")
+    # UV <- UV2[UV2$CompleteGMT <= (Sys.Date() + voydays()),]
+    # print(UV$EmploymentStatus[1])
+    x <- valPLD$rv %>% filter(CompleteGMT <= (Sys.Date() + voydays())) %>% 
+      filter(VesselType %in% input$vtype) %>%
+           filter(Area %in% c(input$areaFilter, '--')) %>%
            filter(DWT >= input$DWTPL[1] & DWT <= input$DWTPL[2]) %>%
            filter(Cubics >= input$CubicsPL[1] & Cubics <= input$CubicsPL[2] ) %>%
            filter(YearBuilt >= as.numeric((lubridate::year(Sys.Date()) - input$builtFilter))) %>%
-           filter(LastCargoGrade %in% input$gradeFilter)
+           filter(LastCargoGrade %in% c(input$gradeFilter, NA, ""))
 
-  x <- x %>% select(VesselType,VesselName = VesselName.x, YearBuilt, DWT, Cubics,OpenPort, OpenDate, RepositionPort,
-                    Cargo,EmploymentStatus = CurrentStatus, Area,
+  x <- x %>% select(VesselType,VesselName = VesselName, YearBuilt, DWT, Cubics,OpenPort, OpenDate, RepositionPort,
+                    Cargo,CurrentStatus, EmploymentStatus, Area,
                     IceClass, LastDryDock = Vessel_LastDryDock_Date,
                     NextDryDock = Vessel_NextDryDock_Date, LastPolish = Vessel_Last_Polish_Date,LastCleaning = Vessel_LastCleaning_Date,
                     VoyNum = voyNum, FirstLoadPort = PortOfFirstLoad_PortName, LastDischargePort = PortOfLastDischarge_Portname,  LastCargoGrade,
                     OpenPortDate, OpenTime,
-                      lat, lon, CompleteGMT, cog, Dim_Vessel_Id, VesselCode)
-  
+                      lat, lon, CompleteGMT, cog, Dim_Vessel_Id, VesselCode,UID)
+  # saveRDS(x, "x.Rds")
   x
   })
 
@@ -629,7 +724,7 @@ function(input, output, session) {
   datatable(sPosListData, rownames =  FALSE,
   extensions = 'Buttons', options = list(pageLength = 50,scrollX = TRUE, dom = 'Blfrtip', 
                                        buttons = c('copy', 'csv', 'excel', 'pdf', 'print',I('colvis')),
-                                       columnDefs = list(list(visible = FALSE, targets = c(11:27))))
+                                       columnDefs = list(list(visible = FALSE, targets = c(12:29))))
 
   )
   },server = FALSE)
@@ -638,7 +733,7 @@ function(input, output, session) {
   datatable(sPosListData, rownames = FALSE,
   extensions = 'Buttons', options = list(pageLength = 50,scrollX = TRUE, dom = 'Blfrtip', 
                                                    buttons = c('copy', 'csv', 'excel', 'pdf', 'print',I('colvis')),
-                                                   columnDefs = list(list(visible = FALSE, targets = c(11:27))))
+                                                   columnDefs = list(list(visible = FALSE, targets = c(12:29))))
     )
   },server = FALSE)
   
@@ -648,8 +743,9 @@ function(input, output, session) {
     req(sPosListData$origData())
     df <- sPosListData$origData()
     if (nrow(df) < 1) return(NULL)
-    distri <- df %>% group_by(EmploymentStatus) %>% summarise(Count = n()) %>% arrange(desc(Count))
-    hchart(df$EmploymentStatus, colorByPoint = TRUE, name = "Status")
+    distri <- df %>% group_by(CurrentStatus) %>% summarise(Count = n()) %>% arrange(desc(Count))
+    
+    hchart(df$CurrentStatus, colorByPoint = TRUE, name = "Status")
   })
 
   #################################################################
@@ -1161,7 +1257,7 @@ if (nrow(routes) > 0) {
   
 
 ####################################################################################
-####################################################################################
+###################################################################################
 source("serverScripts/FLICServer.R", local = TRUE)
 source("serverScripts/PositionList.R", local = TRUE)
 source("serverScripts/CargoList.R", local = TRUE)
