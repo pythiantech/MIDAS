@@ -143,6 +143,23 @@ function(input, output, session) {
     WVD$MMSI <- as.numeric(WVD$MMSI)
     WVD
   })
+  ########################################################################
+  envVetting <- reactiveFileReader(
+    intervalMillis = 24*60*60*1000, #Read every day
+    session = session,
+    filePath = '/home/data/VettingKPI.Rds',
+    readFunc = readRDS
+  )
+  VettingKPI <- reactive({
+    VT <- envVetting()
+    VT$InspectionDate <- mdy(VT$InspectionDate)
+    VT$IMO <- as.numeric(VT$IMO)
+    VT <- VT %>% filter(IsReportedSIRE == '1') %>% 
+      filter(Basis == 'Inspection') %>% 
+      filter(Status %in% c("Acceptable", "Inspected")) %>% 
+      group_by(IMO) %>% arrange(IMO,desc(InspectionDate)) %>% do(head(., 1))
+    VT
+  })
   #######################################################################
   EDWlatest <- reactive(EDW() %>% group_by(ves_code) %>% filter(voy_no_int == max(voy_no_int)) %>%
     filter(ord_no_int == max(ord_no_int)) %>%
@@ -388,7 +405,7 @@ function(input, output, session) {
   CargoM <- reactive({
     CM <- CargoMulti() %>% group_by(Fkey_Dim_Vessel_Id) %>%
     filter(Mcargo != 'Data Unavailable') %>% top_n(3, VoyageNo) %>%
-    mutate(Cargo = paste0(Mcargo, collapse = "/")) %>%
+    mutate(Cargo = paste0(Mcargo, collapse = "/ ")) %>%
     dplyr::select(Fkey_Dim_Vessel_Id,Cargo) %>% unique()
 
     CM$LastCargoGrade <- CargoGrade()$Grade[match(CM$Fkey_Dim_Vessel_Id, CargoGrade()$Fkey_Dim_Vessel_Id)]
@@ -628,41 +645,50 @@ function(input, output, session) {
   ######################################
   valPLD <- reactiveValues()
   PosListData <- reactive({
-    # saveRDS(UniqueVessels(), 'UV.Rds')
-    UV <- req(UniqueVessels())
-    # print(nrow(UniqueVessels()))
     
-    # UV <- UV2 %>% dplyr::filter(CompleteGMT <= (Sys.Date() + voydays()))
-    # UV <- UV2[UV2$CompleteGMT <= (Sys.Date() + voydays()),]
-    # UV2 <- UV %>% filter(CompleteGMT <= (Sys.Date() + 10))
+    UV <- req(UniqueVessels())
+    
     UV$OpenDate <- substr(UV$OpenPortDate, 1, 10)
     UV$OpenTime <- substr(UV$OpenPortDate, 12, 19)
     UV$Area <- V_Dim_Ports()$Area[match(UV$RepositionPort, V_Dim_Ports()$PortName)]
-    # UV$YearBuilt <- wvd()$Built[match(toupper(UV$VesselName), wvd()$Name)]
-    # UV$DWT <- wvd()$Dwt[match(toupper(UV$VesselName), wvd()$Name)]
-    # UV$Cubics <- wvd()$Cubics[match(toupper(UV$VesselName), wvd()$Name)]
     UV$YearBuilt <- wvd()$Built[match(UV$IMO, wvd()$`IMO No.`)]
     UV$DWT <- wvd()$Dwt[match(UV$IMO, wvd()$`IMO No.`)]
     UV$Cubics <- wvd()$Cubics[match(UV$IMO, wvd()$`IMO No.`)]
+    UV$ROWIDT <- seq(1, nrow(UV))
     UV$EmploymentStatus <- ""
-    # print(nrow(UniqueVessels()))
-    # print(nrow(UV))
-    # saveRDS(UV, 'Uv.Rds')
-    # print(is.null(valPLD$rv))
-    # if (!is.null(valPLD$rv)) {
-    #   #Common UIDs which are not to be changed
-    #   UIDs <- UV$UID[UV$UID %in% unique(valPLD$rv$UID)]
-    #   # print(UIDs)
-    #   UVTemp <- UV
-    #   UVTemp$RepositionPort[UV$UID %in% UIDs] <- valPLD$rv$RepositionPort[valPLD$rv$UID %in% UIDs]
-    #   UVTemp$EmploymentStatus[UV$UID %in% UIDs] <- valPLD$rv$EmploymentStatus[valPLD$rv$UID %in% UIDs]
-    #   valPLD$rv <- UVTemp
-    #   print(valPLD$rv$EmploymentStatus[1])
-    # }
-    # else 
-    # print(is.null(valPLD$rv))
+    UV$UpdatedBy <- ""
+    UV$RepositionDate <- Sys.Date()
+    UV$Comments <- ""
+    UV$OMC <- VettingKPI()$Approval[match(UV$IMO, VettingKPI()$IMO)]
+    UV$InspDate <- format(VettingKPI()$InspectionDate[match(UV$IMO, VettingKPI()$IMO)], "%d-%m-%Y")
+    UV$Port <- VettingKPI()$PortName[match(UV$IMO, VettingKPI()$IMO)]
+    UV <- UV %>% unite(Col, InspDate, OMC, sep = " by ")
+    UV <- UV %>% unite(LastSIRE, Col, Port, sep = " at ")
+    UV$LastSIRE[UV$LastSIRE == 'NA by NA at NA'] <- "Data unavailable"
+    UV <- UV %>% select(VesselType, Name = VesselName, OpenPort, OpenDate, RepPort = RepositionPort, RepDate = RepositionDate,
+                        Cargo, LastSIRE, EmplStatus = EmploymentStatus,Comments, 
+                        Built = YearBuilt, DWT, Cubics,IceClass,
+                        CurrentStatus, VoyNum = voyNum, Area, LastCargoGrade,UpdatedBy,
+                        NextDryDock = Vessel_NextDryDock_Date, LastPolish = Vessel_Last_Polish_Date,LastCleaning = Vessel_LastCleaning_Date,
+                         
+                        OpenPortDate, OpenTime,
+                        lat, lon, CompleteGMT, cog, Dim_Vessel_Id, VesselCode,UID,ROWIDT)
+    # saveRDS(UV, 'data/UV.Rds')
+    #Read in existing data
+    UVTemp <- readRDS('data/UV.Rds')
+    
+    #Now find UIDs which are already present in UV
+    UIDcommon <- UV$UID[UV$UID %in% unique(UVTemp$UID)]
+    UV$RepPort[UV$UID %in% UIDcommon] <- UVTemp$RepPort[UVTemp$UID %in% UIDcommon]
+    UV$RepDate[UV$UID %in% UIDcommon] <- UVTemp$RepDate[UVTemp$UID %in% UIDcommon]
+    UV$Comments[UV$UID %in% UIDcommon] <- UVTemp$Comments[UVTemp$UID %in% UIDcommon]
+    UV$EmplStatus[UV$UID %in% UIDcommon] <- UVTemp$EmplStatus[UVTemp$UID %in% UIDcommon]
+    UV$UpdatedBy[UV$UID %in% UIDcommon] <- UVTemp$UpdatedBy[UVTemp$UID %in% UIDcommon]
+    saveRDS(UV, 'data/UV.Rds')
+    rm(UVTemp)
+    UV <- readRDS('data/UV.Rds')
     valPLD$rv <- UV
-    # saveRDS(UV, 'data/PLD.Rds')
+   
     UV
   })
 
@@ -687,57 +713,295 @@ function(input, output, session) {
                 min = min(wvd()$Cubics, na.rm = T),max = max(wvd()$Cubics, na.rm = T))
   })
 
+  
+#############################################################
   data <- reactive({
     req(valPLD$rv)
-    # print(valPLD$rv$EmploymentStatus[1])
-    # print(valPLD$rv$RepositionPort[1])
-    # saveRDS(valPLD$rv, "PS.Rds")
-    # UV <- UV2[UV2$CompleteGMT <= (Sys.Date() + voydays()),]
-    # print(UV$EmploymentStatus[1])
+    
     x <- valPLD$rv %>% filter(CompleteGMT <= (Sys.Date() + voydays())) %>% 
       filter(VesselType %in% input$vtype) %>%
            filter(Area %in% c(input$areaFilter, '--')) %>%
            filter(DWT >= input$DWTPL[1] & DWT <= input$DWTPL[2]) %>%
            filter(Cubics >= input$CubicsPL[1] & Cubics <= input$CubicsPL[2] ) %>%
-           filter(YearBuilt >= as.numeric((lubridate::year(Sys.Date()) - input$builtFilter))) %>%
+           filter(Built >= as.numeric((lubridate::year(Sys.Date()) - input$builtFilter))) %>%
            filter(LastCargoGrade %in% c(input$gradeFilter, NA, ""))
 
-  x <- x %>% select(VesselType,VesselName = VesselName, YearBuilt, DWT, Cubics,OpenPort, OpenDate, RepositionPort,
-                    Cargo,CurrentStatus, EmploymentStatus, Area,
-                    IceClass, LastDryDock = Vessel_LastDryDock_Date,
-                    NextDryDock = Vessel_NextDryDock_Date, LastPolish = Vessel_Last_Polish_Date,LastCleaning = Vessel_LastCleaning_Date,
-                    VoyNum = voyNum, FirstLoadPort = PortOfFirstLoad_PortName, LastDischargePort = PortOfLastDischarge_Portname,  LastCargoGrade,
-                    OpenPortDate, OpenTime,
-                      lat, lon, CompleteGMT, cog, Dim_Vessel_Id, VesselCode,UID)
-  # saveRDS(x, "x.Rds")
+  # x <- x %>% select(VesselType,VesselName = VesselName, YearBuilt, DWT, Cubics,OpenPort, OpenDate, RepositionPort,
+  #                   Cargo,CurrentStatus, EmploymentStatus, Area,
+  #                   IceClass, LastDryDock = Vessel_LastDryDock_Date,
+  #                   NextDryDock = Vessel_NextDryDock_Date, LastPolish = Vessel_Last_Polish_Date,LastCleaning = Vessel_LastCleaning_Date,
+  #                   VoyNum = voyNum, FirstLoadPort = PortOfFirstLoad_PortName, LastDischargePort = PortOfLastDischarge_Portname,  LastCargoGrade,
+  #                   OpenPortDate, OpenTime,
+  #                     lat, lon, CompleteGMT, cog, Dim_Vessel_Id, VesselCode,UID)
+  # x <- x %>% select(Name = VesselName, OpenPort, OpenDate, RepPort = RepositionPort, RepDate = RepositionDate,
+  #                   Comments, Emp = EmploymentStatus, VesselType, YearBuilt, DWT, Cubics,
+  #                   Cargo,CurrentStatus,Area, IceClass,
+  #                   NextDryDock = Vessel_NextDryDock_Date, LastPolish = Vessel_Last_Polish_Date,LastCleaning = Vessel_LastCleaning_Date,
+  #                   VoyNum = voyNum, FirstLoadPort = PortOfFirstLoad_PortName, LastDischargePort = PortOfLastDischarge_Portname,  LastCargoGrade,
+  #                   OpenPortDate, OpenTime,
+  #                   lat, lon, CompleteGMT, cog, Dim_Vessel_Id, VesselCode,UID,ROWIDT,UpdatedBy)
+  
+  
+  
+  # saveRDS(x, 'data/PLdata.Rds')
+  # x <- readRDS('data/PLdata.Rds')
+  valPLD$data <- x
   x
   })
 
   # #################################################################
   # # Position List
+datanew <- reactive({
+  df <- req(data())
+  req(valPLD$data)
+  df <- valPLD$data
+  df
+})
   # #################################################################
 
-  sPosListData <- SharedData$new(data,key = ~lat, group = "pl")
+  sPosListData <- SharedData$new(datanew,key = ~lat, group = "pl")
   
-  output$posTable <- DT::renderDT({
+  output$posTable2 <-output$posTable <- DT::renderDT({
     req(sPosListData)
-  datatable(sPosListData, rownames =  FALSE,
-  extensions = 'Buttons', options = list(pageLength = 50,scrollX = TRUE, dom = 'Blfrtip', 
-                                       buttons = c('copy', 'csv', 'excel', 'pdf', 'print',I('colvis')),
-                                       columnDefs = list(list(visible = FALSE, targets = c(12:29))))
+  datatable(sPosListData, rownames =  FALSE, editable = TRUE,
+  extensions = c('Buttons','Responsive'), options = list(pageLength = 50,scrollX = TRUE, dom = 'Blfrtip',
+                                                         buttons = list(I('colvis')),
+                                       columnDefs = list(list(visible = FALSE, targets = c(0,10:17,19:31))))
 
   )
   },server = FALSE)
 
-  output$posTable2 <- DT::renderDT({
-  datatable(sPosListData, rownames = FALSE,
-  extensions = 'Buttons', options = list(pageLength = 50,scrollX = TRUE, dom = 'Blfrtip', 
-                                                   buttons = c('copy', 'csv', 'excel', 'pdf', 'print',I('colvis')),
-                                                   columnDefs = list(list(visible = FALSE, targets = c(12:29))))
-    )
-  },server = FALSE)
+  ######################################################################################################  
+  proxy3 <- dataTableProxy('posTable2') 
   
-##############################################################################
+  observeEvent(input$posTable2_cell_edit, {
+    
+    info = input$posTable2_cell_edit
+    
+    i = info$row
+    j = info$col = info$col + 1  # column index offset by 1
+    v = info$value
+    ROWIDT = valPLD$data[i,32]
+    UpdatedBy = user()
+    
+    valPLD$data[i, j] <<- DT::coerceValue(v, valPLD$data[i, j])
+    
+    if (all(is.na(valPLD$editedInfo))) {
+      valPLD$editedInfo <- data.frame(c(info,ROWIDT, UpdatedBy), stringsAsFactors = FALSE)
+      colnames(valPLD$editedInfo) <- c("row", "col", "value","ROWIDT","UpdatedBy")
+    } else {
+      df <- data.frame(c(info,ROWIDT, UpdatedBy), stringsAsFactors = FALSE)
+      colnames(df) <- c("row", "col", "value","ROWIDT","UpdatedBy")
+      valPLD$editedInfo <- dplyr::bind_rows(valPLD$editedInfo, df)
+    }
+    print(valPLD$editedInfo)
+  })
+  
+  
+  ####Save the data
+  observeEvent(input$savePT2, {
+    req(valPLD$editedInfo)
+    #Filter only for columns where the user is allowed to make changes
+    editedValue <- valPLD$editedInfo %>% filter(col %in% c(5,6,9,10)) %>% 
+      group_by(ROWIDT, col) %>%
+      filter(value == dplyr::last(value) | is.na(value)) %>%
+      ungroup()
+    print(editedValue)
+    
+    #Read in the saved data
+    UV <- readRDS('data/UV.Rds')
+    
+    if (nrow(editedValue) > 0) {
+    for (i in 1:nrow(editedValue)) {
+      
+      if (editedValue$col[i] != 6) UV[editedValue$ROWIDT[i],editedValue$col[i]] <- as.character(editedValue$value[i])
+      else UV[editedValue$ROWIDT[i],editedValue$col[i]] <- as.Date(editedValue$value[i])
+      UV$UpdatedBy[editedValue$ROWIDT[i]] <- editedValue$UpdatedBy[i]
+    }
+      
+    saveRDS(UV, 'data/UV.Rds')
+
+    valPLD$rv <- readRDS('data/UV.Rds')
+    valPLD$editedInfo <- NA
+    shinyalert("Success!", "The data has been saved", type = "success")
+    }
+    else {
+      valPLD$editedInfo <- NA
+      shinyalert("Alert!", "You cannot edit this column", type = "error")
+    }
+  })
+  
+  #Refresh the data
+  
+  observeEvent(input$refreshPT2, {
+    PLD <- readRDS('data/UV.Rds')
+    valPLD$rv <- PLD
+    x <- valPLD$rv %>% filter(CompleteGMT <= (Sys.Date() + voydays())) %>% 
+      filter(VesselType %in% input$vtype) %>%
+      filter(Area %in% c(input$areaFilter, '--')) %>%
+      filter(DWT >= input$DWTPL[1] & DWT <= input$DWTPL[2]) %>%
+      filter(Cubics >= input$CubicsPL[1] & Cubics <= input$CubicsPL[2] ) %>%
+      filter(Built >= as.numeric((lubridate::year(Sys.Date()) - input$builtFilter))) %>%
+      filter(LastCargoGrade %in% c(input$gradeFilter, NA, ""))
+    valPLD$data <- x
+  })
+#################################################################################################################################
+ 
+  ######################################################################################################  
+  proxy3 <- dataTableProxy('posTable') 
+  
+  observeEvent(input$posTable_cell_edit, {
+    
+    info = input$posTable_cell_edit
+    
+    i = info$row
+    j = info$col = info$col + 1  # column index offset by 1
+    v = info$value
+    ROWIDT = valPLD$data[i,32]
+    UpdatedBy = user()
+    
+    valPLD$data[i, j] <<- DT::coerceValue(v, valPLD$data[i, j])
+    
+    if (all(is.na(valPLD$editedInfo))) {
+      valPLD$editedInfo <- data.frame(c(info,ROWIDT, UpdatedBy), stringsAsFactors = FALSE)
+      colnames(valPLD$editedInfo) <- c("row", "col", "value","ROWIDT","UpdatedBy")
+    } else {
+      df <- data.frame(c(info,ROWIDT, UpdatedBy), stringsAsFactors = FALSE)
+      colnames(df) <- c("row", "col", "value","ROWIDT","UpdatedBy")
+      valPLD$editedInfo <- dplyr::bind_rows(valPLD$editedInfo, df)
+    }
+    print(valPLD$editedInfo)
+  })
+  
+  
+  ####Save the data
+  observeEvent(input$savePT, {
+    req(valPLD$editedInfo)
+    #Filter only for columns where the user is allowed to make changes
+    editedValue <- valPLD$editedInfo %>% filter(col %in% c(5,6,9,10)) %>% 
+      group_by(ROWIDT, col) %>%
+      filter(value == dplyr::last(value) | is.na(value)) %>%
+      ungroup()
+    print(editedValue)
+    
+    #Read in the saved data
+    UV <- readRDS('data/UV.Rds')
+    
+    if (nrow(editedValue) > 0) {
+      for (i in 1:nrow(editedValue)) {
+        
+        if (editedValue$col[i] != 6) UV[editedValue$ROWIDT[i],editedValue$col[i]] <- as.character(editedValue$value[i])
+        else UV[editedValue$ROWIDT[i],editedValue$col[i]] <- as.Date(editedValue$value[i])
+        UV$UpdatedBy[editedValue$ROWIDT[i]] <- editedValue$UpdatedBy[i]
+      }
+      
+      saveRDS(UV, 'data/UV.Rds')
+      
+      valPLD$rv <- readRDS('data/UV.Rds')
+      valPLD$editedInfo <- NA
+      shinyalert("Success!", "The data has been saved", type = "success")
+    }
+    else {
+      valPLD$editedInfo <- NA
+      shinyalert("Alert!", "You cannot edit this column", type = "error")
+    }
+  })
+  
+  #Refresh the data
+  
+  observeEvent(input$refreshPT, {
+    PLD <- readRDS('data/UV.Rds')
+    valPLD$rv <- PLD
+    x <- valPLD$rv %>% filter(CompleteGMT <= (Sys.Date() + voydays())) %>% 
+      filter(VesselType %in% input$vtype) %>%
+      filter(Area %in% c(input$areaFilter, '--')) %>%
+      filter(DWT >= input$DWTPL[1] & DWT <= input$DWTPL[2]) %>%
+      filter(Cubics >= input$CubicsPL[1] & Cubics <= input$CubicsPL[2] ) %>%
+      filter(Built >= as.numeric((lubridate::year(Sys.Date()) - input$builtFilter))) %>%
+      filter(LastCargoGrade %in% c(input$gradeFilter, NA, ""))
+    valPLD$data <- x
+  })
+  
+  ##############################
+  #Modals
+  output$SelColPT <- renderUI({
+    pickerInput('SelColPT', label = NULL, choices = names(valPLD$rv),
+                multiple = TRUE, selected = names(valPLD$rv),options = list(`actions-box` = TRUE))
+  })
+  output$SelColPT2 <- renderUI({
+    pickerInput('SelColPT2', label = NULL, choices = names(valPLD$rv),
+                multiple = TRUE, selected = names(valPLD$rv),options = list(`actions-box` = TRUE))
+  })
+  # output$SaveDownload <- renderUI({
+  #   downloadButton("SaveDownload", "Download")
+  # })
+  # output$SaveDownload2 <- renderUI({
+  #   downloadButton("SaveDownload2", "Download")
+  # })
+  
+  output$SaveDownload <- downloadHandler(
+    filename = function(){"PositionList.csv"},
+    content = function(file) {
+      req(input$SelColPT)
+      req(valPLD$rv)
+      x <- valPLD$rv %>% filter(CompleteGMT <= (Sys.Date() + voydays())) %>% 
+        filter(VesselType %in% input$vtype) %>%
+        filter(Area %in% c(input$areaFilter, '--')) %>%
+        filter(DWT >= input$DWTPL[1] & DWT <= input$DWTPL[2]) %>%
+        filter(Cubics >= input$CubicsPL[1] & Cubics <= input$CubicsPL[2] ) %>%
+        filter(Built >= as.numeric((lubridate::year(Sys.Date()) - input$builtFilter))) %>%
+        filter(LastCargoGrade %in% c(input$gradeFilter, NA, "")) %>% 
+        select(input$SelColPT)
+      write.csv(x, file)
+      
+    }
+  )
+  output$SaveDownload2 <- downloadHandler(
+    filename = function(){"PositionList.csv"},
+    content = function(file) {
+      req(input$SelColPT2)
+      req(valPLD$rv)
+      x <- valPLD$rv %>% filter(CompleteGMT <= (Sys.Date() + voydays())) %>% 
+        filter(VesselType %in% input$vtype) %>%
+        filter(Area %in% c(input$areaFilter, '--')) %>%
+        filter(DWT >= input$DWTPL[1] & DWT <= input$DWTPL[2]) %>%
+        filter(Cubics >= input$CubicsPL[1] & Cubics <= input$CubicsPL[2] ) %>%
+        filter(Built >= as.numeric((lubridate::year(Sys.Date()) - input$builtFilter))) %>%
+        filter(LastCargoGrade %in% c(input$gradeFilter, NA, "")) %>% 
+        select(input$SelColPT2)
+      
+      write.csv(x, file)
+      
+    }
+  )
+  # observeEvent(input$SaveDownload, {
+  #   req(input$SelColPT)
+  #   req(valPLD$rv)
+  #   x <- valPLD$rv %>% filter(CompleteGMT <= (Sys.Date() + voydays())) %>% 
+  #     filter(VesselType %in% input$vtype) %>%
+  #     filter(Area %in% c(input$areaFilter, '--')) %>%
+  #     filter(DWT >= input$DWTPL[1] & DWT <= input$DWTPL[2]) %>%
+  #     filter(Cubics >= input$CubicsPL[1] & Cubics <= input$CubicsPL[2] ) %>%
+  #     filter(Built >= as.numeric((lubridate::year(Sys.Date()) - input$builtFilter))) %>%
+  #     filter(LastCargoGrade %in% c(input$gradeFilter, NA, "")) %>% 
+  #     select(input$SelColPT)
+  #   write.csv(x, file = file.choose(new=TRUE))
+  # })
+  # observeEvent(input$SaveDownload2, {
+  #   req(input$SelColPT2)
+  #   req(valPLD$rv)
+  #   x <- valPLD$rv %>% filter(CompleteGMT <= (Sys.Date() + voydays())) %>% 
+  #     filter(VesselType %in% input$vtype) %>%
+  #     filter(Area %in% c(input$areaFilter, '--')) %>%
+  #     filter(DWT >= input$DWTPL[1] & DWT <= input$DWTPL[2]) %>%
+  #     filter(Cubics >= input$CubicsPL[1] & Cubics <= input$CubicsPL[2] ) %>%
+  #     filter(Built >= as.numeric((lubridate::year(Sys.Date()) - input$builtFilter))) %>%
+  #     filter(LastCargoGrade %in% c(input$gradeFilter, NA, "")) %>% 
+  #     select(input$SelColPT2)
+  #   write.csv(x, file = file.choose(new = TRUE))
+  # })
+  #################################################################################################################################
+  
   
   output$distribution <- renderHighchart({
     req(sPosListData$origData())
@@ -755,8 +1019,8 @@ function(input, output, session) {
     if (nrow(sPosListData$origData()) < 1) return(NULL)
     shipIcons <- icons(
       iconUrl =
-        ifelse(data()$CompleteGMT <= Sys.Date(), "www/img/10.png",
-        ifelse(data()$CompleteGMT <= (Sys.Date() + 6), "www/img/7.png",
+        ifelse(datanew()$CompleteGMT <= Sys.Date(), "www/img/10.png",
+        ifelse(datanew()$CompleteGMT <= (Sys.Date() + 6), "www/img/7.png",
         "www/img/5.png")),
       iconWidth = 11, iconHeight = 24, iconAnchorX = 5, iconAnchorY = 0
     )
@@ -765,7 +1029,7 @@ function(input, output, session) {
       addTiles() %>%
       addProviderTiles(providers$Esri.WorldTopoMap) %>%
       registerPlugin(rotatedMarkerPlugin) %>%
-      addMarkers(lng = ~lon, lat = ~lat, label = ~VesselName,
+      addMarkers(lng = ~lon, lat = ~lat, label = ~Name,
                  labelOptions = labelOptions(
                    textOnly = TRUE,
                    noHide = FALSE
@@ -787,8 +1051,8 @@ function(input, output, session) {
     if (nrow(sPosListData$origData()) < 1) return(NULL)
     shipIcons <- icons(
       iconUrl =
-        ifelse(data()$CompleteGMT <= Sys.Date(), "www/img/10.png",
-               ifelse(data()$CompleteGMT <= (Sys.Date() + 6), "www/img/7.png",
+        ifelse(datanew()$CompleteGMT <= Sys.Date(), "www/img/10.png",
+               ifelse(datanew()$CompleteGMT <= (Sys.Date() + 6), "www/img/7.png",
                       "www/img/5.png")),
       iconWidth = 11, iconHeight = 24, iconAnchorX = 5, iconAnchorY = 0
     )
@@ -796,7 +1060,7 @@ function(input, output, session) {
       addTiles() %>%
       addProviderTiles(providers$Esri.WorldTopoMap) %>%
       registerPlugin(rotatedMarkerPlugin) %>%
-      addMarkers(lng = ~lon, lat = ~lat, label = ~VesselName,
+      addMarkers(lng = ~lon, lat = ~lat, label = ~Name,
                  labelOptions = labelOptions(
                    textOnly = TRUE,
                    noHide = FALSE
@@ -956,7 +1220,7 @@ function(input, output, session) {
     isolate({
         shipName <- data() %>%
         filter(Dim_Vessel_Id == ShipID()) %>%
-        pull(VesselName)
+        pull(Name)
       shipName
     })
   })
@@ -968,7 +1232,7 @@ function(input, output, session) {
     isolate({
       shipName <- data() %>%
         filter(Dim_Vessel_Id == ShipID()) %>%
-        pull(VesselName)
+        pull(Name)
       shipName
     })
   })
@@ -979,7 +1243,7 @@ function(input, output, session) {
     isolate({
       shipName <- data() %>%
         filter(Dim_Vessel_Id == ShipID()) %>%
-        pull(VesselName)
+        pull(Name)
       shipName
     })
   })
@@ -1030,12 +1294,21 @@ function(input, output, session) {
 
   })
 
+  output$vetdata <- renderUI({
+    if (all(is.na(VettData())) ){
+      print(nrow(VettData()))
+      return("No Data To Show")
+    }
+      
+    
+   else DTOutput("VettingData")
+  })
   output$VettingData <- renderDT({
     req(VettData())
     datatable(then(VettData(),
                    onFulfilled = function(value) {
                      value
-                   }), options = list(pageLength = 5,scrollX = TRUE))
+                   }),rownames = FALSE, options = list(pageLength = 5,scrollX = TRUE))
 
 
   })
@@ -1259,7 +1532,7 @@ if (nrow(routes) > 0) {
 ####################################################################################
 ###################################################################################
 source("serverScripts/FLICServer.R", local = TRUE)
-source("serverScripts/PositionList.R", local = TRUE)
+# source("serverScripts/PositionList.R", local = TRUE)
 source("serverScripts/CargoList.R", local = TRUE)
 source("serverScripts/TonnageList.R", local = TRUE)
 source("serverScripts/MktFixReport.R", local = TRUE)

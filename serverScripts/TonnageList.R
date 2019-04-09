@@ -30,6 +30,13 @@
       sliderInput('CubicTL',"Filter by Cubic",value = c(min(wvd()$Cubics, na.rm = T),max(wvd()$Cubics, na.rm = T)),
                   min = min(wvd()$Cubics, na.rm = T),max = max(wvd()$Cubics, na.rm = T))
     })
+    output$builtfilterTL <- renderUI({
+      sliderInput('builtfilterTL', "Filter by Age of Vessel", min = 0, max = 30, value = 30)
+    })
+    output$PortsTL <- renderUI({
+      pickerInput('PortsTL',"Filter by Opening Port", choices = levels(as.factor(unique(V_Dim_Ports()$PortName))),
+                  options = list(`actions-box` = TRUE,`live-search` = TRUE),multiple = T, selected = levels(as.factor(unique(V_Dim_Ports()$PortName))))
+    })
 
 valuesTL <- reactiveValues()
 TLData <- reactive({
@@ -52,7 +59,9 @@ TLData <- reactive({
     filter(Cubic >= input$CubicTL[1] & Cubic <= input$CubicTL[2] | Cubic %in% c(""," ",NA)) %>%
     filter(Operators %in% c(input$OprTL, "", " ", NA)) %>%
     filter(OpenDate >= input$OpenPortDate[1] & OpenDate <= input$OpenPortDate[2] | is.na(OpenDate)) %>%
-    filter(EmpStatus %in% c(input$EmpTL, ""," ", NA))
+    filter(EmpStatus %in% c(input$EmpTL, ""," ", NA)) %>% 
+    filter(Built >= as.numeric((lubridate::year(Sys.Date()) - input$builtfilterTL))) %>% 
+    filter(OpenPort %in% input$PortsTL)
  
 })
 
@@ -251,7 +260,7 @@ observeEvent(input$saveTLData, {
     TL$timestamp[editedValue$ROWIDT[i]] <- editedValue$newtimestamp[i]
     TL$UpdatedBy[editedValue$ROWIDT[i]] <- editedValue$username[i]
   }
-  
+  print(TL)
   saveRDS(TL, 'data/TonnageList.Rds')
   
   ##################################
@@ -269,7 +278,9 @@ observeEvent(input$saveTLData, {
     filter(Cubic >= input$CubicTL[1] & Cubic <= input$CubicTL[2] | Cubic %in% c(""," ",NA)) %>%
     filter(Operators %in% c(input$OprTL, "", " ", NA)) %>%
     filter(OpenDate >= input$OpenPortDate[1] & OpenDate <= input$OpenPortDate[2] | is.na(OpenDate)) %>%
-    filter(EmpStatus %in% c(input$EmpTL, ""," ", NA))
+    filter(EmpStatus %in% c(input$EmpTL, ""," ", NA)) %>% 
+    filter(Built >= as.numeric((lubridate::year(Sys.Date()) - input$builtfilterTL))) %>% 
+    filter(OpenPort %in% input$PortsTL)
   valuesTL[["TonnageList"]] <- TL
   
   
@@ -311,7 +322,7 @@ observeEvent(input$saveTLData2, {
     TL$timestamp[editedValue$ROWIDT[i]] <- editedValue$newtimestamp[i]
     TL$UpdatedBy[editedValue$ROWIDT[i]] <- editedValue$username[i]
   }
-  
+  print(TL)
   saveRDS(TL, 'data/TonnageList.Rds')
   
   ##################################
@@ -329,7 +340,9 @@ observeEvent(input$saveTLData2, {
     filter(Cubic >= input$CubicTL[1] & Cubic <= input$CubicTL[2] | Cubic %in% c(""," ",NA)) %>%
     filter(Operators %in% c(input$OprTL, "", " ", NA)) %>%
     filter(OpenDate >= input$OpenPortDate[1] & OpenDate <= input$OpenPortDate[2] | is.na(OpenDate)) %>%
-    filter(EmpStatus %in% c(input$EmpTL, ""," ", NA))
+    filter(EmpStatus %in% c(input$EmpTL, ""," ", NA)) %>% 
+    filter(Built >= as.numeric((lubridate::year(Sys.Date()) - input$builtfilterTL))) %>%
+    filter(OpenPort %in% input$PortsTL)
   valuesTL[["TonnageList"]] <- TL
   
   
@@ -343,8 +356,9 @@ observeEvent(input$saveTLData2, {
 #Reactive values for storing information
 TonVal <- reactiveValues()
 
-output$BizTon2 <- output$BizTon <- renderDT({
-  BT <- BizTon()
+output$BizTon <- renderDT({
+  req(input$reptimevalid)
+  BT <- BizTon() %>% filter(ReportTimestamp >= (Sys.time() - input$reptimevalid*24*60*60))
   BT <- data.frame(lapply(BT, function(v) {
     if (is.character(v)) return(toupper(v))
     else return(v)
@@ -360,6 +374,26 @@ output$BizTon2 <- output$BizTon <- renderDT({
                            pageLength = 10,lengthMenu = list(c(10,20, 50,-1), list('10', '20', '50','All')), paging = T,
                            columnDefs = list(list(visible = FALSE, targets = c(12,14,15)))))
             
+}, server = TRUE)
+
+output$BizTon2 <- renderDT({
+  req(input$reptimevalid2)
+  BT <- BizTon() %>% filter(ReportTimestamp >= (Sys.time() - input$reptimevalid2*24*60*60))
+  BT <- data.frame(lapply(BT, function(v) {
+    if (is.character(v)) return(toupper(v))
+    else return(v)
+  }))
+  BT$ROWIDT <- ""
+  # BT <- BT %>% select(VesselName:Comments,VslType:Owner, UpdatedBy, timestamp, ROWIDT)
+  BT <- arrange(BT, desc(ReportTimestamp))
+  TonVal$BT <- BT
+  
+  datatable(BT, rownames = FALSE, extensions = 'Buttons', filter = 'top',
+            options = list(deferRender = TRUE,scroller = FALSE,scrollX = TRUE,
+                           dom = 'Blfrtip', buttons = c('copy', 'csv', 'excel', 'pdf', 'print',I('colvis')),
+                           pageLength = 10,lengthMenu = list(c(10,20, 50,-1), list('10', '20', '50','All')), paging = T,
+                           columnDefs = list(list(visible = FALSE, targets = c(12,14,15)))))
+  
 }, server = TRUE)
 
 proxy = dataTableProxy('BizTon')
@@ -384,8 +418,8 @@ observeEvent(input$shiftcellsTL, {
   df <- df %>% select(-ReportTimestamp)
   df$OpenDate <- mdy(as.character(df$OpenDate))
   # valuesTL$TonnageList$OpenDate <- mdy(as.character(valuesTL$TonnageList$OpenDate))
-  print(str(df))
-  print(str(valuesTL$TonnageList))
+  # print(str(df))
+  # print(str(valuesTL$TonnageList))
   valuesTL[["TonnageList"]] <- rbind(valuesTL[["TonnageList"]], df)
   saveRDS(valuesTL[["TonnageList"]], 'data/TonnageList.Rds')
   TL <- readRDS('data/TonnageList.Rds')

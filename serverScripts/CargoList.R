@@ -135,6 +135,7 @@ observeEvent(input$CargoListData$changes$changes, {
   ROWIDT <- as.integer(df[rowid,22])
   info <- sapply(info, function(x) ifelse(x == "NULL", NA, x))
   rowsold <- nrow(readRDS('data/CargoList.Rds'))
+  maxrowval <- max(readRDS('data/CargoList.Rds') %>% pull(ROWIDT))
   if (all(is.na(edI$editedInfoCL))) {
     edI$editedInfoCL <- data.frame(c(info,oldtimestamp, newtimestamp, username, ROWIDT, rowsold), stringsAsFactors = FALSE)
     
@@ -159,7 +160,7 @@ observeEvent(input$CargoListData$changes$changes, {
     
     if (is.na(edI$editedInfoCL[i,8])) {
       if (i < 2) {
-        edI$editedInfoCL[i,8] <- rowsold + 1
+        edI$editedInfoCL[i,8] <- maxrowval + 1 #This adds a number to ROWIDT for new rows
         
       }
       else{
@@ -189,10 +190,10 @@ observeEvent(input$CargoListData2$changes$changes, {
   oldtimestamp <- valuesCL[["CargoList"]][rowid,21]
   newtimestamp <- epochTime()
   username <- user()
-  # ROWIDT <- as.integer(valuesCL[["CargoList"]][rowid,22])
-  ROOWIDT <- aas.integer(df[rowid,22])
+  ROWIDT <- as.integer(df[rowid,22])
   info <- sapply(info, function(x) ifelse(x == "NULL", NA, x))
   rowsold <- nrow(readRDS('data/CargoList.Rds'))
+  maxrowval <- max(readRDS('data/CargoList.Rds') %>% pull(ROWIDT))
   if (all(is.na(edI$editedInfoCL))) {
     edI$editedInfoCL <- data.frame(c(info,oldtimestamp, newtimestamp, username, ROWIDT, rowsold), stringsAsFactors = FALSE)
     
@@ -217,7 +218,7 @@ observeEvent(input$CargoListData2$changes$changes, {
     
     if (is.na(edI$editedInfoCL[i,8])) {
       if (i < 2) {
-        edI$editedInfoCL[i,8] <- rowsold + 1
+        edI$editedInfoCL[i,8] <- maxrowval + 1
         
       }
       else{
@@ -240,7 +241,8 @@ observeEvent(input$CargoListData2$changes$changes, {
 observeEvent(input$addRow, {
   req(input$CargoListData)
   df <- hot_to_r(input$CargoListData)
-  df <- df %>% add_row()
+  df <- df %>% add_row(ReportDate = Sys.Date(), Information = 'Market',
+                       CargoType = 'Clean', RateType = 'WS')
   valuesCL[["CargoList"]] <- df
 })
 
@@ -248,10 +250,11 @@ observeEvent(input$addRow, {
 observeEvent(input$addRow2, {
   req(input$CargoListData2)
   df <- hot_to_r(input$CargoListData2)
-  df <- df %>% add_row()
+  df <- df %>% add_row(ReportDate = Sys.Date(), Information = 'Market',
+                       CargoType = 'Clean', RateType = 'WS')
   valuesCL[["CargoList"]] <- df
 })
-
+#################################################
 #Save data
 observeEvent(input$saveCLData, {
   req(edI$editedInfoCL)
@@ -269,16 +272,29 @@ observeEvent(input$saveCLData, {
   CL$Select <- as.logical(CL$Select)
   CL$Region <- toupper(CL$Region)
   rowsnew <- nrow(readRDS('data/CargoList.Rds'))
+  maxrowval <- max(readRDS('data/CargoList.Rds') %>% pull(ROWIDT))
+  editedValue$rowsnew <- rowsnew
+ 
   
-  for (i in 1:nrow(editedValue)) {
-    if (editedValue$oldtimestamp[i] == 0) {
-      rowdiff <- rowsnew - editedValue$rowsold[i] #Now there could be lesser rows too!
-      
-      editedValue$ROWIDT[i] <- editedValue$ROWIDT[i] + rowdiff
-      
-    }
-    else {editedValue$ROWIDT[i] <- editedValue$ROWIDT[i]}
-    
+  editedValue <- editedValue %>% 
+    mutate(ROWIDT = case_when(
+      rowsnew == rowsold & oldtimestamp == 0 ~ as.integer(maxrowval + 1),
+      rowsnew < rowsold & oldtimestamp == 0 ~ as.integer(ROWIDT - (rowsold - rowsnew)),
+      rowsnew > rowsold & oldtimestamp == 0 ~ as.integer(maxrowval + 1)
+    ))
+  print(editedValue)
+  RowsAdd <- editedValue %>% filter(oldtimestamp == 0) 
+  if (nrow(RowsAdd) > 0) {
+  RowsAdd1 <- length(unique(RowsAdd$ROWIDT))
+  UniqueROWIDT <- unique(RowsAdd$ROWIDT)
+  
+  for (i in 1:RowsAdd1) {
+    CL <- CL %>% add_row(ROWIDT = UniqueROWIDT[i], ReportDate = Sys.Date(), Information = 'Market',
+                         CargoType = 'Clean', RateType = 'WS')
+  }
+  }
+  print(nrow(CL))
+  for (i in 1:nrow(editedValue)) { 
     rowindex <- which(CL$ROWIDT == editedValue$ROWIDT[i])
     # print(rowindex)
     if (editedValue$colid[i] != 18) CL[rowindex,editedValue$colid[i]] <- as.character(editedValue$newvalue[i])
@@ -297,15 +313,6 @@ observeEvent(input$saveCLData, {
   CL$Operator <- wvd()$`Commercial Operator`[match(CL$Vessel, wvd()$Name)]
   CL$Select <- as.logical(CL$Select)
   CL$Region <- toupper(CL$Region)
-  # updatePickerInput(session, 'InformationCL',selected = c("Market", "Private"))
-  # updatePickerInput(session, 'RegionCL',selected =  c('NW EUROPE', 'MED', 'BSEA', 'WAF', 'USG/CARIBS', 'USAC', 
-  #                                                     'USWC', 'LATIN EAST', 'LATIN WEST', 'MIDDLE EAST', 'RED SEA/AFRICA', 'IOR', 
-  #                                                     'SOUTH EA', 'FAR EAST', 'OZ/NZ/PACIFIC'))
-  # updatePickerInput(session, 'CargoTypeCL', selected = c("Clean","Dirty","Chemicals"))
-  # updatePickerInput(session, 'StatusCL', selected = c("Fixed","Unfixed","Hold",
-  #                                                     "Subs","Others","Died", "Looking","Open","WDWF"))
-  # updateDateRangeInput(session, 'RepDateCL',start = (Sys.Date() - 30), end=Sys.Date() + 30)
-  
   CL <- CL %>% dplyr::filter(Information %in% c(input$InformationCL,""," ",NA)) %>%
     dplyr::filter(Region %in% c(input$RegionCL, ""," ",NA)) %>% 
     dplyr::filter(CargoType %in% c(input$CargoTypeCL,""," ",NA)) %>% 
@@ -318,6 +325,8 @@ observeEvent(input$saveCLData, {
 
 
 ###################################################
+#################################################
+#Save data
 observeEvent(input$saveCLData2, {
   req(edI$editedInfoCL)
   ####################
@@ -334,16 +343,27 @@ observeEvent(input$saveCLData2, {
   CL$Select <- as.logical(CL$Select)
   CL$Region <- toupper(CL$Region)
   rowsnew <- nrow(readRDS('data/CargoList.Rds'))
+  maxrowval <- max(readRDS('data/CargoList.Rds') %>% pull(ROWIDT))
+  editedValue$rowsnew <- rowsnew
   
-  for (i in 1:nrow(editedValue)) {
-    if (editedValue$oldtimestamp[i] == 0) {
-      rowdiff <- rowsnew - editedValue$rowsold[i] #Now there could be lesser rows too!
-      
-      editedValue$ROWIDT[i] <- editedValue$ROWIDT[i] + rowdiff
-      
-    }
-    else {editedValue$ROWIDT[i] <- editedValue$ROWIDT[i]}
-    
+  editedValue <- editedValue %>% 
+    mutate(ROWIDT = case_when(
+      rowsnew == rowsold & oldtimestamp == 0 ~ as.integer(maxrowval + 1),
+      rowsnew < rowsold & oldtimestamp == 0 ~ as.integer(ROWIDT - (rowsold - rowsnew)),
+      rowsnew > rowsold & oldtimestamp == 0 ~ as.integer(maxrowval + 1)
+    ))
+  RowsAdd <- editedValue %>% filter(oldtimestamp == 0) 
+  if (nrow(RowsAdd) > 0) {
+    RowsAdd1 <- length(unique(RowsAdd$ROWIDT))
+    UniqueROWIDT <- unique(RowsAdd$ROWIDT)
+  
+  for (i in 1:RowsAdd1) {
+    CL <- CL %>% add_row(ROWIDT = UniqueROWIDT[i], ReportDate = Sys.Date(), Information = 'Market',
+                         CargoType = 'Clean', RateType = 'WS')
+  }
+  }
+  print(nrow(CL))
+  for (i in 1:nrow(editedValue)) { 
     rowindex <- which(CL$ROWIDT == editedValue$ROWIDT[i])
     # print(rowindex)
     if (editedValue$colid[i] != 18) CL[rowindex,editedValue$colid[i]] <- as.character(editedValue$newvalue[i])
@@ -362,15 +382,6 @@ observeEvent(input$saveCLData2, {
   CL$Operator <- wvd()$`Commercial Operator`[match(CL$Vessel, wvd()$Name)]
   CL$Select <- as.logical(CL$Select)
   CL$Region <- toupper(CL$Region)
-  # updatePickerInput(session, 'InformationCL',selected = c("Market", "Private"))
-  # updatePickerInput(session, 'RegionCL',selected =  c('NW EUROPE', 'MED', 'BSEA', 'WAF', 'USG/CARIBS', 'USAC', 
-  #                                                     'USWC', 'LATIN EAST', 'LATIN WEST', 'MIDDLE EAST', 'RED SEA/AFRICA', 'IOR', 
-  #                                                     'SOUTH EA', 'FAR EAST', 'OZ/NZ/PACIFIC'))
-  # updatePickerInput(session, 'CargoTypeCL', selected = c("Clean","Dirty","Chemicals"))
-  # updatePickerInput(session, 'StatusCL', selected = c("Fixed","Unfixed","Hold",
-  #                                                     "Subs","Others","Died", "Looking","Open","WDWF"))
-  # updateDateRangeInput(session, 'RepDateCL',start = (Sys.Date() - 30), end=Sys.Date() + 30)
-  
   CL <- CL %>% dplyr::filter(Information %in% c(input$InformationCL,""," ",NA)) %>%
     dplyr::filter(Region %in% c(input$RegionCL, ""," ",NA)) %>% 
     dplyr::filter(CargoType %in% c(input$CargoTypeCL,""," ",NA)) %>% 
@@ -380,6 +391,9 @@ observeEvent(input$saveCLData2, {
   edI$editedInfoCL <- NA
   shinyalert("Success!", "The data has been saved", type = "success")
 })
+
+
+###################################################
 ###############################################
 #Render Scorpio Cargo List
 output$ScoFixList2 <- output$ScoFixList <- renderDT({

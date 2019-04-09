@@ -12,7 +12,7 @@ observeEvent(input$hideFilters, {
   shinyjs::show(id = "hiddenT")
   shinyjs::hide(id = "filtersT")
 })
-CustomList <- read_csv('data/wl/CustomList.csv')
+CustomList <- read_csv('/home/data/CustomList.csv')
 vals <- reactiveValues(df = CustomList)
 
 output$wlControl <- renderUI({
@@ -25,7 +25,7 @@ output$wlControl <- renderUI({
 
 
 observeEvent(input$wlView,{
-  CustomList <- read_csv('data/wl/CustomList.csv')
+  CustomList <- read_csv('/home/data/CustomList.csv')
   vals <- reactiveValues(df = CustomList)
   updatePickerInput(session,'vsltypeFLIC',selected = c("Handy", "LR1",
                                                        "LR2", "MR"))
@@ -223,8 +223,8 @@ observeEvent(input$saveList,{
   else{
     ListName <- rep(input$wlName, length(WVDData()$Name))
     myList <- as.data.frame(cbind(WVDData()$Name,ListName))
-    write_csv(myList,'data/wl/CustomList.csv',append = TRUE)
-    CustomList <- read_csv('data/wl/CustomList.csv')
+    write_csv(myList,'/home/data/CustomList.csv',append = TRUE)
+    CustomList <- read_csv('/home/data/CustomList.csv')
     vals$df <- CustomList
   updateSelectInput(session, 'wl', choices = levels(as.factor(vals$df$ListName)))
   updateSelectInput(session, 'delList', choices = levels(as.factor(vals$df$ListName)))
@@ -243,8 +243,8 @@ observeEvent(input$deleteList,{
   req(input$delList)
   shinyalert(text = "The list you selected has been deleted", type = "success")
   x <- vals$df %>% filter(ListName != input$delList)
-  write_csv(x, 'data/wl/CustomList.csv')
-  CustomList <- read_csv('data/wl/CustomList.csv')
+  write_csv(x, '/home/data/CustomList.csv')
+  CustomList <- read_csv('/home/data/CustomList.csv')
   vals$df <- CustomList
   updateSelectInput(session, 'wl', choices = levels(as.factor(vals$df$ListName)))
   updateSelectInput(session, 'delList', choices = levels(as.factor(vals$df$ListName)))
@@ -273,7 +273,7 @@ observeEvent(input$saveEdited,{
   req(input$listName)
   req(input$idWL)
   CustomList$Name[CustomList$ListName == input$listName] <- input$idWL
-  write_csv(CustomList, 'data/wl/CustomList.csv')
-  CustomList <- read_csv('data/wl/CustomList.csv')
+  write_csv(CustomList, '/home/data/CustomList.csv')
+  CustomList <- read_csv('/home/data/CustomList.csv')
   vals$df <- CustomList
 })

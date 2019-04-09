@@ -68,7 +68,23 @@ tabPanel(
               ),
               div(
                 class = "section_box_body",
+                div(style="display: inline-block;vertical-align:top; width: 100px;",
+                    actionButton("savePT", "Save", class = "btn-primary")),
+                div(style="display: inline-block;vertical-align:top; width: 100px;",
+                    actionButton("refreshPT", "Refresh", class = "btn-primary")),
+                # div(style="display: inline-block;vertical-align:top; width: 100px;",
+                #     actionButton("DownloadPT", "Download", class = "btn-primary")),
+                div(style="display: inline-block;vertical-align:top; width: 250px;",
+                    uiOutput('SelColPT')),
+                div(style="display: inline-block;vertical-align:top; width: 100px;",
+                    downloadButton("SaveDownload", "Download")),
+                useShinyalert(),
+                br(),br(),
                DT::dataTableOutput("posTable")
+               # bsModal("DownloadActionPT","Download Data", "DownloadPT", size = "large",
+               #         uiOutput('SelColPT'),
+               #         uiOutput('SaveDownload'))
+               
               )
             )
 ###############################################
@@ -127,7 +143,23 @@ tabPanel(
               ),
               div(
                 class = "section_box_body",
+                div(style="display: inline-block;vertical-align:top; width: 100px;",
+                    actionButton("savePT2", "Save", class = "btn-primary")),
+                div(style="display: inline-block;vertical-align:top; width: 100px;",
+                    actionButton("refreshPT2", "Refresh", class = "btn-primary")),
+                # div(style="display: inline-block;vertical-align:top; width: 100px;",
+                #     actionButton("DownloadPT2", "Download", class = "btn-primary")),
+                div(style="display: inline-block;vertical-align:top; width: 250px;",
+                    uiOutput('SelColPT2')),
+                div(style="display: inline-block;vertical-align:top; width: 100px;",
+                    downloadButton("SaveDownload2", "Download")),
+                useShinyalert(),
+                br(),br(),
                 DT::dataTableOutput("posTable2")
+                # bsModal("DownloadActionPT2","Download Data", "DownloadPT2", size = "large",
+                #         uiOutput('SelColPT2'),
+                #         uiOutput('SaveDownload2'))
+                
               )
             )
             ###############################################
@@ -233,7 +265,8 @@ tabPanel(
                 div(class = "section_box_divider"),
                 ###########################################
                 div(class = "section_box_subtitle", "Vetting Data"),
-                DT::dataTableOutput("VettingData")
+                uiOutput("vetdata")
+                # DT::DTOutput("VettingData")
                 ###############################################
                 
               )
@@ -244,59 +277,59 @@ tabPanel(
       ),
 
 
-
-
-      tabPanel(
-        title = "Position List",
-        fluidRow(
-          column(9,
-                 rHandsontableOutput("PositionListData"),
-                 useShinyalert()
-        ),
-        column(3,
-               div(
-                 class = "section_box",
-                 div(
-                   class = "section_box_title",
-                   "Position List Table"
-                 ),
-                 div(
-                   class = "section_box_body",
-                   "Please use this form to add details on tonnage information.
-                      You can also use filters below to customize your view.", br(),br(),
-                   actionBttn('savePLData',"Save",style = "jelly",
-                              color = "success",
-                              icon = icon("thumbs-up")),
-                   useShinyalert(),
-                   br(), br(),
-                   actionBttn('Refresh',"Refresh",style = "jelly",
-                              color = "success",
-                              icon = icon("sync")),
-                   div(class = "section_box_divider"),
-                   uiOutput('cstatus'),
-                   uiOutput('vtypePL'),
-                   uiOutput('vname')
-                 )),
-
-                 div(
-                   class = "section_box",
-                   div(
-                     class = "section_box_title",
-                     "Select Days to Unfix"
-                   ),
-                   div(
-                     class = "section_box_body",
-                     sliderInput(
-                       "voydaysPL",
-                       NULL,
-                       min = 1,
-                       max = 60,
-                       value = 10
-                     )
-                   )
-                 )
-               )
-      )),
+# 
+# 
+#       tabPanel(
+#         title = "Position List",
+#         fluidRow(
+#           column(9,
+#                  rHandsontableOutput("PositionListData"),
+#                  useShinyalert()
+#         ),
+#         column(3,
+#                div(
+#                  class = "section_box",
+#                  div(
+#                    class = "section_box_title",
+#                    "Position List Table"
+#                  ),
+#                  div(
+#                    class = "section_box_body",
+#                    "Please use this form to add details on tonnage information.
+#                       You can also use filters below to customize your view.", br(),br(),
+#                    actionBttn('savePLData',"Save",style = "jelly",
+#                               color = "success",
+#                               icon = icon("thumbs-up")),
+#                    useShinyalert(),
+#                    br(), br(),
+#                    actionBttn('Refresh',"Refresh",style = "jelly",
+#                               color = "success",
+#                               icon = icon("sync")),
+#                    div(class = "section_box_divider"),
+#                    uiOutput('cstatus'),
+#                    uiOutput('vtypePL'),
+#                    uiOutput('vname')
+#                  )),
+# 
+#                  div(
+#                    class = "section_box",
+#                    div(
+#                      class = "section_box_title",
+#                      "Select Days to Unfix"
+#                    ),
+#                    div(
+#                      class = "section_box_body",
+#                      sliderInput(
+#                        "voydaysPL",
+#                        NULL,
+#                        min = 1,
+#                        max = 60,
+#                        value = 10
+#                      )
+#                    )
+#                  )
+#                )
+#       )),
 #############################################################
 #Tonnage List
 tabPanel(
@@ -339,7 +372,7 @@ tabPanel(
           ),
           div(
             class = "section_box_body",
-            
+            sliderInput('reptimevalid2','Report time validity', min = 3, max = 20, value =5),
             DTOutput('BizTon2'),
             br(),
             h4("Please select rows by clicking on them and then press the shift button to copy
@@ -385,7 +418,7 @@ tabPanel(
              ),
              div(
                class = "section_box_body",
-               
+               sliderInput('reptimevalid','Report time validity', min = 3, max = 20, value =5),
                DTOutput('BizTon'),
                br(),
                h4("Please select rows by clicking on them and then press the shift button to copy
@@ -415,7 +448,8 @@ tabPanel(
                uiOutput('DWTTL'),
                uiOutput('OprTL'),
                uiOutput('CubicTL'),
-               
+               uiOutput('builtfilterTL'),
+               uiOutput('PortsTL'),
                dateRangeInput('OpenPortDate',"Filter by Open Port Date", start = (Sys.Date() - 30), end = Sys.Date() + 30),
                br(), br(),
                actionBttn('ResetFilt',"Reset Filters",style = "jelly",

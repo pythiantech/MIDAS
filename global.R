@@ -70,11 +70,19 @@ options(scipen=999)
 #Bizlem fullload API function for Tonnage, Spot, TimeCharterReports and BrokerTcRate
   
   GetBizlemData <- function(report, start, end){
-    tryCatch({
+    
+    # https://stackoverflow.com/questions/34346619/how-to-stop-a-function-in-r-that-is-taking-too-long-and-give-it-an-alternative
+      time_limit <- 100
+      
+      setTimeLimit(cpu = time_limit, elapsed = time_limit, transient = TRUE)
+      on.exit({
+        setTimeLimit(cpu = Inf, elapsed = Inf, transient = FALSE)
+      })
+      tryCatch({
     BizURL <- "https://dev.bizlem.io:8082/scorpio/ReportApi"
     auth <- '$CorpioReport!ntegration$ystem@*3!2'
     body <- list(reporttype  =  report, from  =  start, to  =  end, Authorization  =  auth)
-    r <- POST(BizURL, body  =  body, encode  =  "json")
+    r <- POST(BizURL, body  =  body, encode  =  "json", verbose())
     text_context <- content(r, "text")
     x <- paste(text_context, collapse  =  "") %>% fromJSON
     df <- x[[1]]
